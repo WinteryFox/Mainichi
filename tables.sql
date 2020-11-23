@@ -35,4 +35,4 @@ CREATE TABLE follows
 (
     follower BIGINT REFERENCES users (snowflake), -- The person following
     followee BIGINT REFERENCES users (snowflake)  -- The person being followed
-)
+);
