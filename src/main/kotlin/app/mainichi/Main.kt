@@ -1,13 +1,16 @@
 package app.mainichi
 
-import app.mainichi.objects.Bucket
-import java.io.File
-import java.nio.file.Path
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.runApplication
 
-val bucket = Bucket()
+//val bucket = Bucket("s3.nl-ams.scw.cloud", "nl-ams", System.getenv("bucket-access-key"), System.getenv("bucket-secret-key"))
+
+@SpringBootApplication
+class Mainichi
 
 fun main() {
-    bucket.putAndHash("mainichi", Path.of("/avatars/"), File("/home/amy/Pictures/avatar.png"))
+    //bucket.putAndHash("mainichi", Path.of("/avatars/"), File("/home/amy/Pictures/avatar.png"))
+    //bucket.setVisible("mainichi", "avatars/*", true)
 
-    bucket.setVisible("mainichi", "avatars/*", true)
+    runApplication<Mainichi>()
 }

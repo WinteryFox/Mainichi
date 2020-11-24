@@ -9,6 +9,21 @@ CREATE TABLE users
     gender    GENDER NOT NULL                         -- The gender of the user (female, male, unknown)
 );
 
+CREATE TABLE learning
+(
+    snowflake BIGINT REFERENCES users(snowflake),
+    language VARCHAR(5),
+    proficiency SMALLINT NOT NULL,
+    PRIMARY KEY(snowflake, language)
+);
+
+CREATE TABLE proficient
+(
+    snowflake BIGINT REFERENCES users(snowflake),
+    language VARCHAR(5),
+    PRIMARY KEY(snowflake, language)
+);
+
 CREATE TABLE posts
 (
     snowflake BIGINT PRIMARY KEY,                  -- The ID of the post
