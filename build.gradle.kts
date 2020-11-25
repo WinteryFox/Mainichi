@@ -23,7 +23,14 @@ dependencies {
     implementation("com.amazonaws:aws-java-sdk-s3:1.11.906")
     implementation("javax.xml.bind:jaxb-api:2.3.1")
 
+    // PostgreSQL
+    //runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("io.r2dbc:r2dbc-postgresql")
+    implementation("org.postgresql:r2dbc-postgresql:0.8.6.RELEASE")
+
     // Spring
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

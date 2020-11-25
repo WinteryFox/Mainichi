@@ -13,6 +13,10 @@ import org.springframework.messaging.converter.MessageConverter
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
+import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Controller
 import org.springframework.util.MimeTypeUtils
@@ -27,7 +31,13 @@ import reactor.core.publisher.Mono
 
 @Configuration
 @EnableWebSocketMessageBroker
-class WebsocketController : WebSocketMessageBrokerConfigurer {
+@EnableWebFluxSecurity
+class WebsocketController : AbstractSecurityWebSocketMessageBrokerConfigurer() {
+    override fun configureInbound(messages: MessageSecurityMetadataSourceRegistry) {
+        messages.simpDestMatchers("/user/**").authenticated()
+            .anyMessage().authenticated()
+    }
+
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
         registry.enableSimpleBroker("/user")
         registry.setApplicationDestinationPrefixes("/")
