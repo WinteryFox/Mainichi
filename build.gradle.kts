@@ -11,6 +11,7 @@ plugins {
 
 group = "app.mainichi"
 version = "1.0-SNAPSHOT"
+java.sourceCompatibility = JavaVersion.VERSION_11
 
 repositories {
     mavenCentral()
@@ -23,25 +24,37 @@ dependencies {
     implementation("com.amazonaws:aws-java-sdk-s3:1.11.906")
     implementation("javax.xml.bind:jaxb-api:2.3.1")
 
-    // PostgreSQL
-    //runtimeOnly("org.postgresql:postgresql")
-    runtimeOnly("io.r2dbc:r2dbc-postgresql")
-    implementation("org.postgresql:r2dbc-postgresql:0.8.6.RELEASE")
-
     // Spring
+    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    implementation("org.springframework.boot:spring-boot-starter-rsocket")
+    //implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    //implementation("org.springframework.security:spring-security-messaging")
+    //implementation("org.springframework.security:spring-security-rsocket")
+
+    runtimeOnly("io.r2dbc:r2dbc-postgresql")
+    runtimeOnly("org.postgresql:postgresql")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.projectreactor:reactor-test")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+    //testImplementation("org.springframework.security:spring-security-test")
 }
 
-tasks.withType<KotlinCompile>().configureEach {
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+
+tasks.withType<KotlinCompile> {
     kotlinOptions {
-        jvmTarget = "15"
+        freeCompilerArgs = listOf("-Xjsr305=strict")
+        jvmTarget = "11"
     }
 }

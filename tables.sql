@@ -11,17 +11,17 @@ CREATE TABLE users
 
 CREATE TABLE learning
 (
-    snowflake BIGINT REFERENCES users(snowflake),
-    language VARCHAR(5),
+    snowflake   BIGINT REFERENCES users (snowflake),
+    language    VARCHAR(2) REFERENCES languages (code),
     proficiency SMALLINT NOT NULL,
-    PRIMARY KEY(snowflake, language)
+    PRIMARY KEY (snowflake, language)
 );
 
 CREATE TABLE proficient
 (
-    snowflake BIGINT REFERENCES users(snowflake),
-    language VARCHAR(5),
-    PRIMARY KEY(snowflake, language)
+    snowflake BIGINT REFERENCES users (snowflake),
+    language  VARCHAR(5) REFERENCES languages (code),
+    PRIMARY KEY (snowflake, language)
 );
 
 CREATE TABLE posts
