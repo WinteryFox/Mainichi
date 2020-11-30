@@ -3,16 +3,16 @@ server:
 
 spring:
   r2dbc:
-    username: postgres user here
-    name: postgres database here
-    password: postgres password here
-    url: r2dbc:postgres://localhost
+    username: "postgres user here"
+    name: "postgres database here"
+    password: "postgres password here"
+    url: "r2dbc:postgres://localhost"
   rsocket:
     server:
-      mapping-path: /gateway
-      transport: websocket
+      mapping-path: "/gateway"
+      transport: "websocket"
 
 spring.security.oauth2.client.registration:
   google:
-    clientId: google client id here
-    clientSecret: google client secret here
+    clientId: "google client id here"
+    clientSecret: "google client secret here"

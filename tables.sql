@@ -1,12 +1,13 @@
-CREATE DOMAIN GENDER CHAR(1) CHECK (value IN ('F', 'M', 'U'));
+CREATE DOMAIN GENDER CHAR(1) CHECK (value IN ('F', 'M'));
 
 CREATE TABLE users
 (
-    snowflake BIGINT PRIMARY KEY, -- The ID of the user
-    username  TEXT   NOT NULL,    -- The username of the user
-    birthday  DATE   NOT NULL,    -- The user's birthday
-    gender    GENDER NOT NULL,    -- The gender of the user (female, male, unknown)
-    summary   TEXT                -- The summary/description/self-introduction of the user
+    snowflake BIGINT PRIMARY KEY,  -- The ID of the user
+    email     TEXT NOT NULL,
+    username  TEXT NOT NULL,       -- The username of the user
+    gender    GENDER DEFAULT NULL, -- The gender of the user (female, male, unknown)
+    birthday  DATE   DEFAULT NULL, -- The user's birthday
+    summary   TEXT   DEFAULT NULL  -- The summary/description/self-introduction of the user
 );
 
 CREATE TABLE learning
