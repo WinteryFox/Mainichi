@@ -1,5 +1,6 @@
 package app.mainichi.objects
 
+import app.mainichi.data.SnowflakePersistable
 import org.springframework.data.relational.core.mapping.Table
 import java.sql.Date
 
@@ -11,4 +12,4 @@ data class User(
     val birthday: Date?,
     val gender: Char?,
     val summary: String?
-)
+) : SnowflakePersistable()

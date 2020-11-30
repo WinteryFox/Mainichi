@@ -46,6 +46,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.security:spring-security-messaging")
     implementation("org.springframework.security:spring-security-rsocket")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
     runtimeOnly("io.r2dbc:r2dbc-postgresql")
     runtimeOnly("org.postgresql:postgresql")

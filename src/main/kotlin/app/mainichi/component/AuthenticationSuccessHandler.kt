@@ -31,7 +31,7 @@ class AuthenticationSuccessHandler(
             } else {
                 userRepository.save(
                     User(
-                        0, // TODO
+                        0,
                         oAuth2User.attributes["email"] as String,
                         oAuth2User.attributes["name"] as String,
                         null,

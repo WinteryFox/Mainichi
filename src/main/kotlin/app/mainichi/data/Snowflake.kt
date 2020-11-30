@@ -4,7 +4,10 @@ import java.lang.IllegalStateException
 import java.net.NetworkInterface
 import java.security.SecureRandom
 
-class Snowflake(private var nodeId: Long, private var customEpoch: Long) {
+class Snowflake(
+    private var nodeId: Long,
+    private var customEpoch: Long
+) {
     companion object {
         private const val NODE_ID_BITS = 10
         private const val SEQUENCE_BITS = 12
