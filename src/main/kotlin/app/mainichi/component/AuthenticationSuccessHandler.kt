@@ -10,6 +10,7 @@ import org.springframework.security.web.server.DefaultServerRedirectStrategy
 import org.springframework.security.web.server.WebFilterExchange
 import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler
 import org.springframework.stereotype.Component
+import org.springframework.web.reactive.server.awaitSession
 import reactor.core.publisher.Mono
 import java.net.URI
 
@@ -26,24 +27,27 @@ class AuthenticationSuccessHandler(
         if (oAuth2User.attributes.containsKey("email")) {
             val user = userRepository.getByEmail(oAuth2User.attributes["email"] as String)
 
-            if (user != null) {
-                println("Registered!!") // TODO
-            } else {
-                userRepository.save(
-                    User(
-                        0,
-                        oAuth2User.attributes["email"] as String,
-                        oAuth2User.attributes["name"] as String,
-                        null,
-                        null,
-                        null
-                    )
+            if (user != null)
+                webFilterExchange.exchange.awaitSession().attributes.putIfAbsent("SNOWFLAKE", user.snowflake)
+            else
+                webFilterExchange.exchange.awaitSession().attributes.putIfAbsent(
+                    "SNOWFLAKE",
+                    userRepository.save(
+                        User(
+                            0,
+                            oAuth2User.attributes["email"] as String,
+                            oAuth2User.attributes["name"] as String,
+                            null,
+                            null,
+                            null
+                        )
+                    ).snowflake
                 )
-            }
         }
 
-        DefaultServerRedirectStrategy()
+        return@mono null
+        /*DefaultServerRedirectStrategy()
             .sendRedirect(webFilterExchange.exchange, URI("http://localhost:8080"))
-            .awaitFirstOrNull()
+            .awaitFirstOrNull()*/ // TODO
     }
 }

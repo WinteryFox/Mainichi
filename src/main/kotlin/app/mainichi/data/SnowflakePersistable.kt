@@ -10,16 +10,16 @@ val snowflakeGenerator = Snowflake(Snowflake.createNodeId(), 1577836800000L)
 
 abstract class SnowflakePersistable(givenId: Long? = null) : Persistable<Long> {
     @Id
-    private val snowflake = givenId ?: snowflakeGenerator.nextId()
+    private val id = givenId ?: snowflakeGenerator.nextId()
 
     @Transient
     private var persisted = givenId != null
 
-    override fun getId(): Long? = snowflake
+    override fun getId(): Long? = id
 
     override fun isNew(): Boolean = !persisted
 
-    override fun hashCode(): Int = snowflake.hashCode()
+    override fun hashCode(): Int = id.hashCode()
 
     override fun equals(other: Any?): Boolean {
         return when {

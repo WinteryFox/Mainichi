@@ -2,10 +2,13 @@ package app.mainichi
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
+import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
 
 //val bucket = Bucket("s3.nl-ams.scw.cloud", "nl-ams", System.getenv("bucket-access-key"), System.getenv("bucket-secret-key"))
 
 @SpringBootApplication
+@EnableR2dbcRepositories
 class Mainichi
 
 fun main() {
