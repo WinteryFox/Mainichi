@@ -15,7 +15,6 @@ class UserController(
     suspend fun getSelf(
         exchange: ServerWebExchange
     ): User {
-        println(exchange.awaitSession().attributes["SNOWFLAKE"])
         return userRepository.getBySnowflake(exchange.awaitSession().attributes["SNOWFLAKE"] as Long)!!
     }
 }
