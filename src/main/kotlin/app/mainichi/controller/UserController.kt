@@ -7,14 +7,15 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ServerWebExchange
 
-@RestController("/users")
+@RestController
 class UserController(
     val userRepository: UserRepository
 ) {
-    @GetMapping("/@me", produces = ["application/json"])
+    @GetMapping("/users/@me", produces = ["application/json"])
     suspend fun getSelf(
         exchange: ServerWebExchange
     ): User {
+        println(exchange.awaitSession().attributes["SNOWFLAKE"])
         return userRepository.getBySnowflake(exchange.awaitSession().attributes["SNOWFLAKE"] as Long)!!
     }
 }
