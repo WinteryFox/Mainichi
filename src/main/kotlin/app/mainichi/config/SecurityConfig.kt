@@ -1,4 +1,4 @@
-package app.mainichi.controller
+package app.mainichi.config
 
 import app.mainichi.component.AuthenticationSuccessHandler
 import org.springframework.context.annotation.Bean
@@ -17,6 +17,8 @@ class SecurityConfig(
     fun securityFilterChain(
         httpSecurity: ServerHttpSecurity
     ): SecurityWebFilterChain = httpSecurity
+        .csrf() // TODO: Enable when testing finishes
+        .disable()
         .authorizeExchange()
         .pathMatchers("/login", "/register").permitAll()
         .pathMatchers("/logout").authenticated()
