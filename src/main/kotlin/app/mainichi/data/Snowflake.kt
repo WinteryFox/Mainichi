@@ -44,7 +44,7 @@ class Snowflake(
 
     @Synchronized
     fun nextId(): Long {
-        var currentTimestamp = System.currentTimeMillis()
+        var currentTimestamp = timestamp()
 
         if (currentTimestamp < lastTimestamp)
             throw IllegalStateException("Invalid System Clock!")
