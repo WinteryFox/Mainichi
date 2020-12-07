@@ -67,7 +67,7 @@ class UserController(
             )
         )
 
-        // Send a 203 response, indicating that the operation was performed
+        // Send a NO CONTENT response, indicating that the operation was performed
         // but there is no response body and no further action to be taken.
         exchange.response.statusCode = HttpStatus.NO_CONTENT
     }
