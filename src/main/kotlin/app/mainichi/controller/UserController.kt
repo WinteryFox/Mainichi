@@ -26,7 +26,15 @@ class UserController(
         exchange: ServerWebExchange
     ) {
         val user = userRepository.getBySnowflake(exchange.attributes["SNOWFLAKE"] as Long)!!
-        val form = exchange.awaitFormData().toSingleValueMap()
+        val form = exchange.awaitFormData().toSingleValueMap().toMap()
+
+        if (!form.containsKey("username") ||
+            !form.containsKey("birthday") ||
+            !form.containsKey("gender") ||
+            !form.containsKey("summary")) { // TODO: Constrain these values
+            exchange.response.statusCode = HttpStatus.BAD_REQUEST
+            return
+        }
 
         userRepository.save(
             User(
