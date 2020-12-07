@@ -1,8 +1,10 @@
+CREATE EXTENSION snowflake;
+
 CREATE DOMAIN GENDER CHAR(1) CHECK (value IN ('F', 'M'));
 
 CREATE TABLE users
 (
-    snowflake BIGINT PRIMARY KEY,  -- The ID of the user
+    snowflake BIGINT PRIMARY KEY DEFAULT next_snowflake(0, TIMESTAMP '2020-01-01 00:00:00'),  -- The ID of the user
     email     TEXT NOT NULL,
     username  TEXT NOT NULL,       -- The username of the user
     gender    GENDER DEFAULT NULL, -- The gender of the user (female, male, unknown)
