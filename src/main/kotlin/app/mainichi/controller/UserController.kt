@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.reactive.server.awaitFormData
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ServerWebExchange
-import java.sql.Date
+import java.time.LocalDate
 
 /**
  * REST controller for user data
@@ -61,7 +61,7 @@ class UserController(
                 user.snowflake,
                 user.email,
                 username,
-                Date.valueOf(birthday),
+                LocalDate.parse(birthday),
                 gender[0],
                 summary
             )
