@@ -25,7 +25,7 @@ class UserController(
     @GetMapping("/users/@me", produces = ["application/json"])
     suspend fun getSelf(
         exchange: ServerWebExchange
-    ): User = userRepository.getBySnowflake(exchange.awaitSession().attributes["SNOWFLAKE"] as Long)!!
+    ): User = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
 
     /**
      * Update own user data, allows changes to username, birthday, gender and birthday
@@ -35,7 +35,7 @@ class UserController(
         exchange: ServerWebExchange
     ) {
         // Retrieve user and form data sent in
-        val user = userRepository.getBySnowflake(exchange.attributes["SNOWFLAKE"] as Long)!!
+        val user = userRepository.findById(exchange.attributes["SNOWFLAKE"] as String)!!
         val form = exchange.awaitFormData().toSingleValueMap().toMap()
 
         val username = form["username"]

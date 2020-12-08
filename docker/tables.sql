@@ -4,12 +4,12 @@ CREATE DOMAIN GENDER CHAR(1) CHECK (value IN ('F', 'M'));
 
 CREATE TABLE users
 (
-    snowflake BIGINT PRIMARY KEY DEFAULT next_snowflake(0, TIMESTAMP '2020-01-01 00:00:00'),  -- The ID of the user
+    snowflake BIGINT PRIMARY KEY DEFAULT next_snowflake(0, TIMESTAMP '2020-01-01 00:00:00'), -- The ID of the user
     email     TEXT NOT NULL,
-    username  TEXT NOT NULL,       -- The username of the user
-    gender    GENDER DEFAULT NULL, -- The gender of the user (female, male, unknown)
-    birthday  DATE   DEFAULT NULL, -- The user's birthday
-    summary   TEXT   DEFAULT NULL  -- The summary/description/self-introduction of the user
+    username  TEXT NOT NULL,                                                                 -- The username of the user
+    gender    GENDER             DEFAULT NULL,                                               -- The gender of the user (female, male, unknown)
+    birthday  DATE               DEFAULT NULL,                                               -- The user's birthday
+    summary   TEXT               DEFAULT NULL                                                -- The summary/description/self-introduction of the user
 );
 
 CREATE TABLE learning
@@ -29,9 +29,9 @@ CREATE TABLE proficient
 
 CREATE TABLE posts
 (
-    snowflake BIGINT PRIMARY KEY,                  -- The ID of the post
-    author    BIGINT REFERENCES users (snowflake), -- The author of the post
-    content   TEXT NOT NULL                        -- The content of the post
+    snowflake BIGINT PRIMARY KEY DEFAULT next_snowflake(0, TIMESTAMP '2020-01-01 00:00:00'), -- The ID of the post
+    author    BIGINT REFERENCES users (snowflake),                                           -- The author of the post
+    content   TEXT NOT NULL                                                                  -- The content of the post
 );
 
 CREATE TABLE likes
@@ -43,10 +43,10 @@ CREATE TABLE likes
 
 CREATE TABLE comments
 (
-    snowflake BIGINT PRIMARY KEY,                  -- The comment's ID
-    post      BIGINT REFERENCES posts (snowflake), -- The post the comment is on
-    commenter BIGINT REFERENCES users (snowflake), -- User the comment is from
-    content   TEXT NOT NULL                        -- The content of the comment
+    snowflake BIGINT PRIMARY KEY DEFAULT next_snowflake(0, TIMESTAMP '2020-01-01 00:00:00'), -- The comment's ID
+    post      BIGINT REFERENCES posts (snowflake),                                           -- The post the comment is on
+    commenter BIGINT REFERENCES users (snowflake),                                           -- User the comment is from
+    content   TEXT NOT NULL                                                                  -- The content of the comment
 );
 
 CREATE TABLE follows

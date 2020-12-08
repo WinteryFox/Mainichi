@@ -31,15 +31,17 @@ class AuthenticationSuccessHandler(
         // Check if it contains an email
         if (oAuth2User.attributes.containsKey("email")) {
             // Attempt to retrieve a user by that email
-            val user = userRepository.getByEmail(oAuth2User.attributes["email"] as String)
+            val user = userRepository.findByEmail(oAuth2User.attributes["email"] as String)
+            val session = webFilterExchange.exchange.awaitSession()
+            session.start()
 
             if (user != null)
             // If such a user is found, put their ID in the session (so we know who this user is later)
-                webFilterExchange.exchange.awaitSession().attributes.putIfAbsent("SNOWFLAKE", user.snowflake)
+                session.attributes.putIfAbsent("SNOWFLAKE", user.snowflake.toString())
             else
             // If such a user does not exist, create an account using that email, and then put
             // the newly created snowflake in the session
-                webFilterExchange.exchange.awaitSession().attributes.putIfAbsent(
+                session.attributes.putIfAbsent(
                     "SNOWFLAKE",
                     userRepository.save(
                         User(
@@ -50,8 +52,10 @@ class AuthenticationSuccessHandler(
                             null,
                             null
                         )
-                    ).snowflake
+                    ).snowflake.toString()
                 )
+
+            session.save()
         } else {
             TODO("Missing email field catch")
         }
