@@ -37,7 +37,7 @@ class SecurityConfig(
 
     /**
      * Sets up a handler for successful and unsuccessful login attempts.
-     * A successful login attempt will execute {@link AuthenticationSuccessHandler} success handler
+     * A successful login attempt will execute [AuthenticationSuccessHandler]
      *
      * @see AuthenticationSuccessHandler
      */
