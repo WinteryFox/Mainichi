@@ -144,6 +144,8 @@ class UserController(
         } catch (exception: IOException) {
             exchange.response.statusCode = HttpStatus.BAD_REQUEST
             return null
+        } finally {
+            file.delete()
         }
     }
 }
