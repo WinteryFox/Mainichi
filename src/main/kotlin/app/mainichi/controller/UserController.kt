@@ -1,28 +1,34 @@
 package app.mainichi.controller
 
+import app.mainichi.data.Storage
 import app.mainichi.objects.User
 import app.mainichi.repository.UserRepository
+import kotlinx.coroutines.*
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.MediaType
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
+import org.springframework.web.multipart.commons.CommonsMultipartFile
 import org.springframework.web.reactive.server.awaitFormData
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ServerWebExchange
+import java.io.IOException
 import java.time.LocalDate
+import java.time.format.DateTimeParseException
+import javax.imageio.ImageIO
 
 /**
  * REST controller for user data
  */
 @RestController
 class UserController(
-    val userRepository: UserRepository
+    val userRepository: UserRepository,
+    val storage: Storage
 ) {
     /**
      * Request own user data
      */
-    @GetMapping("/users/@me", produces = ["application/json"])
+    @GetMapping("/users/@me", produces = [MediaType.APPLICATION_JSON_VALUE])
     suspend fun getSelf(
         exchange: ServerWebExchange
     ): User = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
@@ -30,12 +36,12 @@ class UserController(
     /**
      * Update own user data, allows changes to username, birthday, gender and birthday
      */
-    @RequestMapping("/users/@me", method = [RequestMethod.POST])
+    @PostMapping("/users/@me", produces = [MediaType.APPLICATION_JSON_VALUE])
     suspend fun updateSelf(
         exchange: ServerWebExchange
-    ) {
+    ): User? {
         // Retrieve user and form data sent in
-        val user = userRepository.findById(exchange.attributes["SNOWFLAKE"] as String)!!
+        val user = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
         val form = exchange.awaitFormData().toSingleValueMap().toMap()
 
         val username = form["username"]
@@ -47,28 +53,91 @@ class UserController(
         // and makes sure that they are within set constraints (e.g. a maximum of
         // x amount of characters in the summary)
         if (username == null ||
+            username.length < 3 || username.length > 24 ||
             birthday == null ||
             gender == null ||
-            summary == null
-        ) { // TODO: Constrain these values
+            !setOf("F", "M").contains(gender) ||
+            summary == null ||
+            summary.length < 32 || summary.length > 1024
+        ) {
             exchange.response.statusCode = HttpStatus.BAD_REQUEST
-            return
+            return null
         }
 
         // Update the user's data in the database with the form data
-        userRepository.save(
-            User(
-                user.snowflake,
-                user.email,
-                username,
-                LocalDate.parse(birthday),
-                gender[0],
-                summary
+        try {
+            return userRepository.save(
+                User(
+                    user.snowflake,
+                    user.email,
+                    username,
+                    LocalDate.parse(birthday),
+                    gender[0],
+                    summary,
+                    user.avatar
+                )
             )
-        )
+        } catch (exception: DateTimeParseException) {
+            exchange.response.statusCode = HttpStatus.BAD_REQUEST
+            return null
+        }
+    }
 
-        // Send a NO CONTENT response, indicating that the operation was performed
-        // but there is no response body and no further action to be taken.
-        exchange.response.statusCode = HttpStatus.NO_CONTENT
+    /**
+     * Update own avatar
+     */
+    @PatchMapping(
+        "/users/@me",
+        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    suspend fun updateAvatar(
+        exchange: ServerWebExchange,
+        @RequestPart("avatar")
+        file: CommonsMultipartFile
+    ): User? {
+        val user = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
+
+        try {
+            // Test if the file being sent to us is actually an image and check its size
+            if (file.contentType != MediaType.IMAGE_PNG_VALUE || file.size > 128 * 1000)
+                throw IOException()
+
+            @Suppress("BlockingMethodInNonBlockingContext")
+            withContext(Dispatchers.IO) {
+                file.inputStream.use {
+                    val image = ImageIO.read(it)
+
+                    if (image.width < 256 || image.width > 512 || // Image must be between 256x256 and 512x512 pixels
+                        image.width != image.height                 // and it must be squar
+                    )
+                        throw IOException()
+                }
+            }
+
+            // Save the image to the bucket and update the user's avatar in the database
+            file.inputStream.use {
+                val updatedUser = userRepository.save(
+                    User(
+                        user.snowflake,
+                        user.email,
+                        user.username,
+                        user.birthday,
+                        user.gender,
+                        user.summary,
+                        storage.putWithHash("avatars", it, MediaType.IMAGE_PNG_VALUE)
+                    )
+                )
+
+                // Delete the old avatar if it wasn't null and it isn't the same as the previous one
+                if (user.avatar != null && updatedUser.avatar != user.avatar)
+                    storage.delete("avatars/${user.avatar}")
+
+                return updatedUser
+            }
+        } catch (exception: IOException) {
+            exchange.response.statusCode = HttpStatus.BAD_REQUEST
+            return null
+        }
     }
 }

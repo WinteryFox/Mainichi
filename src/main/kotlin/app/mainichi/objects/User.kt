@@ -12,5 +12,6 @@ data class User(
     val username: String,
     val birthday: LocalDate?,
     val gender: Char?,
-    val summary: String?
+    val summary: String?,
+    val avatar: String?
 )

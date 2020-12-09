@@ -50,6 +50,7 @@ class AuthenticationSuccessHandler(
                             oAuth2User.attributes["name"] as String,
                             null,
                             null,
+                            null,
                             null
                         )
                     ).snowflake.toString()

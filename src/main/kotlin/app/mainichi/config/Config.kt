@@ -1,11 +1,14 @@
 package app.mainichi.config
 
 import app.mainichi.component.AuthenticationSuccessHandler
+import app.mainichi.data.Storage
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.web.multipart.commons.CommonsMultipartResolver
 import reactor.core.publisher.Mono
 
 /**
@@ -15,7 +18,7 @@ import reactor.core.publisher.Mono
  */
 @Configuration
 @EnableWebFluxSecurity
-class SecurityConfig(
+class Config(
     private val authenticationSuccessHandler: AuthenticationSuccessHandler
 ) {
     /**
@@ -44,9 +47,15 @@ class SecurityConfig(
     fun withConfiguration(spec: ServerHttpSecurity.OAuth2LoginSpec): Unit =
         spec
             .authenticationSuccessHandler(authenticationSuccessHandler)
-            .authenticationFailureHandler { webFilterExchange, error ->
+            .authenticationFailureHandler { _, error ->
                 error.printStackTrace()
                 return@authenticationFailureHandler Mono.empty<Void>()
             }
             .run {}
+
+    @Bean
+    fun bucket(): Storage = Storage()
+
+    @Bean
+    fun multiPartResolver() = CommonsMultipartResolver()
 }

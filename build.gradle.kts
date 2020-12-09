@@ -29,8 +29,7 @@ dependencies {
     implementation(kotlin("stdlib"))
 
     // S3
-    implementation("com.amazonaws:aws-java-sdk-s3:1.11.906")
-    implementation("javax.xml.bind:jaxb-api:2.3.1")
+    implementation("com.google.cloud:google-cloud-storage:1.113.4")
 
     // Spring
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
@@ -47,6 +46,7 @@ dependencies {
     implementation("org.springframework.security:spring-security-messaging")
     implementation("org.springframework.security:spring-security-rsocket")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-configuration-processor")
 
     runtimeOnly("io.r2dbc:r2dbc-postgresql")
     runtimeOnly("org.postgresql:postgresql")
