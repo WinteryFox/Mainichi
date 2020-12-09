@@ -104,7 +104,7 @@ class UserController(
         part: FilePart
     ): User? {
         @Suppress("BlockingMethodInNonBlockingContext")
-        val file = withContext(Dispatchers.IO) { Files.createTempFile("tmp", part.filename()) }.toFile()
+        val file = withContext(Dispatchers.IO) { Files.createTempFile(null, null) }.toFile()
         part.transferTo(file).awaitSingleOrNull()
         val user = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
 
