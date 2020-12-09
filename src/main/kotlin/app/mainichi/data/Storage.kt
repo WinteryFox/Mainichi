@@ -1,48 +1,57 @@
 package app.mainichi.data
 
+import app.mainichi.BUCKET_NAME
+import app.mainichi.PROJECT_NAME
 import com.google.auth.oauth2.GoogleCredentials
-import com.google.cloud.storage.Bucket
+import com.google.cloud.storage.Blob
 import com.google.cloud.storage.StorageOptions
-import java.io.InputStream
-import java.io.OutputStream
-import java.io.OutputStreamWriter
-import java.net.URI
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
-import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.*
 import javax.xml.bind.DatatypeConverter
 
+@Suppress("BlockingMethodInNonBlockingContext")
 class Storage {
     private val service = StorageOptions
         .newBuilder()
-        .setProjectId("mainichi")
+        .setProjectId(PROJECT_NAME)
         .setCredentials(GoogleCredentials.fromStream(Storage::class.java.getResourceAsStream("/google_storage.json")))
         .build()
         .service
-    private val bucket = service.get("mainichi")
+    private val bucket = service.get(BUCKET_NAME)!!
 
-    fun put(key: String, bytes: ByteArray, type: String? = null) {
-        if (type == null)
-            bucket.create(key, bytes)
-        else
-            bucket.create(key, bytes, type)
-    }
+    private suspend fun put(key: String, bytes: ByteArray, type: String? = null): Blob =
+        withContext(Dispatchers.IO) {
+            if (type == null)
+                bucket.create(key, bytes)
+            else
+                bucket.create(key, bytes, type)
+        }
 
-    fun putWithHash(key: String, bytes: ByteArray, type: String? = null): String {
-        val hash = DatatypeConverter.printHexBinary(MessageDigest.getInstance("MD5").digest(bytes)).toLowerCase()
-        val k = "$key/$hash"
+    suspend fun putWithHash(key: String, bytes: ByteArray, type: String? = null): Blob =
+        withContext(Dispatchers.IO) {
+            val hash = DatatypeConverter.printHexBinary(MessageDigest.getInstance("MD5").digest(bytes)).toLowerCase()
 
-        put(k, bytes, type)
-        return hash
-    }
+            return@withContext put(
+                "$key/$hash",
+                bytes,
+                type
+            )
+        }
 
-    fun get(key: String): ByteBuffer {
-        val buffer = ByteBuffer.allocate(128 * 1000)
-        bucket.get(key)?.reader()?.read(buffer)
+    suspend fun get(key: String): ByteBuffer =
+        withContext(Dispatchers.IO) {
+            val blob = bucket.get(key) ?: return@withContext ByteBuffer.allocate(0)
+            val buffer = ByteBuffer.allocate(blob.size.toInt())
+            blob.reader().read(buffer)
 
-        return buffer
-    }
+            return@withContext buffer
+        }
 
-    fun delete(key: String) = bucket.get(key)?.delete()
+    suspend fun delete(key: String) =
+        withContext(Dispatchers.IO) {
+            return@withContext bucket.get(key)?.delete()
+        }
 }

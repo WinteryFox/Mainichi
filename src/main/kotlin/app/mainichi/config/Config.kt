@@ -2,13 +2,12 @@ package app.mainichi.config
 
 import app.mainichi.component.AuthenticationSuccessHandler
 import app.mainichi.data.Storage
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
-import org.springframework.web.multipart.commons.CommonsMultipartResolver
 import reactor.core.publisher.Mono
 
 /**
@@ -31,8 +30,15 @@ class Config(
         .csrf()
         .disable() // TODO: Enable when testing finishes
         .authorizeExchange()
-        .pathMatchers("/login", "/register").permitAll() // Permit all requests to /login and /register
-        .pathMatchers("/logout").authenticated() // Must be authenticated in order to /logout
+        .pathMatchers(
+            HttpMethod.GET,
+            "/login",
+            "/register",
+            "/avatars/*.png",
+            "/posts",
+            "/users/*/posts"
+        ).permitAll()
+        .pathMatchers(HttpMethod.GET, "/logout").authenticated()
         .anyExchange().authenticated() // Any other requests must be authenticated
         .and()
         .oauth2Login(::withConfiguration) // Sets up OAuth2 login (with Google and eventual other providers)

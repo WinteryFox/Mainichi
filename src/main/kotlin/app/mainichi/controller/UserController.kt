@@ -1,23 +1,23 @@
 package app.mainichi.controller
 
+import app.mainichi.AVATARS_LOCATION
+import app.mainichi.MAX_AVATAR_SIZE
+import app.mainichi.MAX_AVATAR_WIDTH
+import app.mainichi.MIN_AVATAR_WIDTH
 import app.mainichi.data.Storage
 import app.mainichi.objects.User
 import app.mainichi.repository.UserRepository
 import kotlinx.coroutines.*
-import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactive.awaitSingleOrNull
+import org.springframework.core.io.ByteArrayResource
+import org.springframework.core.io.Resource
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.codec.multipart.FilePart
-import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.multipart.MultipartFile
-import org.springframework.web.multipart.commons.CommonsMultipartFile
 import org.springframework.web.reactive.server.awaitFormData
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ServerWebExchange
-import reactor.core.publisher.Mono
-import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.time.LocalDate
@@ -90,6 +90,13 @@ class UserController(
         }
     }
 
+    @GetMapping("/avatars/{hash}.png", produces = [MediaType.IMAGE_PNG_VALUE])
+    suspend fun getAvatar(
+        exchange: ServerWebExchange,
+        @PathVariable("hash")
+        hash: String
+    ): Resource = ByteArrayResource(storage.get("avatars/$hash").array())
+
     /**
      * Update own avatar
      */
@@ -110,15 +117,17 @@ class UserController(
 
         try {
             // Test if the file being sent to us is actually an image and check its size
-            if (file.length() > 256 * 1000)
+            if (file.length() > MAX_AVATAR_SIZE)
                 throw IOException()
 
             @Suppress("BlockingMethodInNonBlockingContext")
             withContext(Dispatchers.IO) {
                 val image = ImageIO.read(file)
 
-                if (image.width < 256 || image.width > 512 || // Image must be between 256x256 and 512x512 pixels
-                    image.width != image.height                 // and it must be squar
+                if (// Image must be between 256x256 and 512x512 pixels
+                    image.width < MIN_AVATAR_WIDTH || image.width > MAX_AVATAR_WIDTH ||
+                    // and it must be square
+                    image.width != image.height
                 )
                     throw IOException()
             }
@@ -132,13 +141,13 @@ class UserController(
                     user.birthday,
                     user.gender,
                     user.summary,
-                    storage.putWithHash("avatars", file.readBytes(), MediaType.IMAGE_PNG_VALUE)
+                    storage.putWithHash(AVATARS_LOCATION, file.readBytes(), MediaType.IMAGE_PNG_VALUE).name
                 )
             )
 
             // Delete the old avatar if it wasn't null and it isn't the same as the previous one
             if (user.avatar != null && updatedUser.avatar != user.avatar)
-                storage.delete("avatars/${user.avatar}")
+                storage.delete("$AVATARS_LOCATION/${user.avatar}")
 
             return updatedUser
         } catch (exception: IOException) {
