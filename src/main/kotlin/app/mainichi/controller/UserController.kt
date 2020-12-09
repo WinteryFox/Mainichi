@@ -4,15 +4,22 @@ import app.mainichi.data.Storage
 import app.mainichi.objects.User
 import app.mainichi.repository.UserRepository
 import kotlinx.coroutines.*
+import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.reactive.awaitSingleOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.codec.multipart.FilePart
+import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.multipart.commons.CommonsMultipartFile
 import org.springframework.web.reactive.server.awaitFormData
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ServerWebExchange
+import reactor.core.publisher.Mono
+import java.io.File
 import java.io.IOException
+import java.nio.file.Files
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import javax.imageio.ImageIO
@@ -94,47 +101,46 @@ class UserController(
     suspend fun updateAvatar(
         exchange: ServerWebExchange,
         @RequestPart("avatar")
-        file: CommonsMultipartFile
+        part: FilePart
     ): User? {
+        @Suppress("BlockingMethodInNonBlockingContext")
+        val file = withContext(Dispatchers.IO) { Files.createTempFile("tmp", part.filename()) }.toFile()
+        part.transferTo(file).awaitSingleOrNull()
         val user = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
 
         try {
             // Test if the file being sent to us is actually an image and check its size
-            if (file.contentType != MediaType.IMAGE_PNG_VALUE || file.size > 128 * 1000)
+            if (file.length() > 256 * 1000)
                 throw IOException()
 
             @Suppress("BlockingMethodInNonBlockingContext")
             withContext(Dispatchers.IO) {
-                file.inputStream.use {
-                    val image = ImageIO.read(it)
+                val image = ImageIO.read(file)
 
-                    if (image.width < 256 || image.width > 512 || // Image must be between 256x256 and 512x512 pixels
-                        image.width != image.height                 // and it must be squar
-                    )
-                        throw IOException()
-                }
+                if (image.width < 256 || image.width > 512 || // Image must be between 256x256 and 512x512 pixels
+                    image.width != image.height                 // and it must be squar
+                )
+                    throw IOException()
             }
 
             // Save the image to the bucket and update the user's avatar in the database
-            file.inputStream.use {
-                val updatedUser = userRepository.save(
-                    User(
-                        user.snowflake,
-                        user.email,
-                        user.username,
-                        user.birthday,
-                        user.gender,
-                        user.summary,
-                        storage.putWithHash("avatars", it, MediaType.IMAGE_PNG_VALUE)
-                    )
+            val updatedUser = userRepository.save(
+                User(
+                    user.snowflake,
+                    user.email,
+                    user.username,
+                    user.birthday,
+                    user.gender,
+                    user.summary,
+                    storage.putWithHash("avatars", file.readBytes(), MediaType.IMAGE_PNG_VALUE)
                 )
+            )
 
-                // Delete the old avatar if it wasn't null and it isn't the same as the previous one
-                if (user.avatar != null && updatedUser.avatar != user.avatar)
-                    storage.delete("avatars/${user.avatar}")
+            // Delete the old avatar if it wasn't null and it isn't the same as the previous one
+            if (user.avatar != null && updatedUser.avatar != user.avatar)
+                storage.delete("avatars/${user.avatar}")
 
-                return updatedUser
-            }
+            return updatedUser
         } catch (exception: IOException) {
             exchange.response.statusCode = HttpStatus.BAD_REQUEST
             return null

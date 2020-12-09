@@ -55,7 +55,4 @@ class Config(
 
     @Bean
     fun bucket(): Storage = Storage()
-
-    @Bean
-    fun multiPartResolver() = CommonsMultipartResolver()
 }

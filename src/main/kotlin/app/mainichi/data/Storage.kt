@@ -29,15 +29,12 @@ class Storage {
             bucket.create(key, bytes, type)
     }
 
-    fun putWithHash(key: String, stream: InputStream, type: String? = null): String {
-        stream.use {
-            val bytes = it.readBytes()
-            val hash = DatatypeConverter.printHexBinary(MessageDigest.getInstance("MD5").digest(bytes)).toLowerCase()
-            val k = "$key/$hash"
+    fun putWithHash(key: String, bytes: ByteArray, type: String? = null): String {
+        val hash = DatatypeConverter.printHexBinary(MessageDigest.getInstance("MD5").digest(bytes)).toLowerCase()
+        val k = "$key/$hash"
 
-            put(k, bytes, type)
-            return hash
-        }
+        put(k, bytes, type)
+        return hash
     }
 
     fun get(key: String): ByteBuffer {
