@@ -55,3 +55,14 @@ CREATE TABLE follows
     follower BIGINT REFERENCES users (snowflake), -- The person following
     followee BIGINT REFERENCES users (snowflake)  -- The person being followed
 );
+
+CREATE TABLE sessions
+(
+    id               UUID PRIMARY KEY,
+    attributes       BYTEA     NOT NULL,
+    max_idle_time    BIGINT    NOT NULL,
+    creation_time    TIMESTAMP NOT NULL,
+    last_access_time TIMESTAMP NOT NULL,
+    valid            BOOLEAN   NOT NULL,
+    version          BIGINT    NOT NULL
+)
