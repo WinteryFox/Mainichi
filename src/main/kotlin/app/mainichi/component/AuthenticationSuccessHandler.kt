@@ -1,6 +1,6 @@
 package app.mainichi.component
 
-import app.mainichi.objects.User
+import app.mainichi.table.User
 import app.mainichi.repository.UserRepository
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.mono

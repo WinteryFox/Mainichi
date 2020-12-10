@@ -1,4 +1,4 @@
-package app.mainichi.objects
+package app.mainichi.table
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table

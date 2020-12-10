@@ -1,6 +1,6 @@
 package app.mainichi.repository
 
-import app.mainichi.objects.User
+import app.mainichi.table.User
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 

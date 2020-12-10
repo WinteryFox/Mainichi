@@ -5,7 +5,7 @@ import app.mainichi.MAX_AVATAR_SIZE
 import app.mainichi.MAX_AVATAR_WIDTH
 import app.mainichi.MIN_AVATAR_WIDTH
 import app.mainichi.data.Storage
-import app.mainichi.objects.User
+import app.mainichi.table.User
 import app.mainichi.repository.UserRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactive.awaitSingleOrNull

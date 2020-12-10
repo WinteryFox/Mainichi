@@ -1,9 +1,10 @@
 package app.mainichi.controller
 
-import app.mainichi.objects.Post
+import app.mainichi.`object`.FullPost
+import app.mainichi.table.Post
+import app.mainichi.repository.FullPostRepository
 import app.mainichi.repository.PostRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.toList
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.reactive.server.awaitFormData
@@ -14,14 +15,17 @@ import org.springframework.web.server.ServerWebExchange
  * REST controller for post data
  */
 @RestController
-class PostController(val postRepository: PostRepository) {
+class PostController(
+    val postRepository: PostRepository,
+    val fullPostRepository: FullPostRepository
+) {
     /**
      * Request all post data
      */
     @GetMapping("/posts")
     suspend fun getAllPosts(
         exchange: ServerWebExchange
-    ): Flow<Post> = postRepository.findAll()
+    ): Flow<FullPost> = fullPostRepository.findAll()
 
     /**
      * Request all post data from a specific user

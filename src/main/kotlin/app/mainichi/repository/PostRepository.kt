@@ -1,6 +1,6 @@
 package app.mainichi.repository
 
-import app.mainichi.objects.Post
+import app.mainichi.table.Post
 import kotlinx.coroutines.flow.Flow
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository

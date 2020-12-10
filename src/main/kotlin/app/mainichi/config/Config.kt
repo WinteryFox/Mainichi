@@ -2,9 +2,12 @@ package app.mainichi.config
 
 import app.mainichi.component.AuthenticationSuccessHandler
 import app.mainichi.data.Storage
+import app.mainichi.repository.FullPostRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.r2dbc.convert.R2dbcConverter
 import org.springframework.http.HttpMethod
+import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
@@ -61,4 +64,7 @@ class Config(
 
     @Bean
     fun bucket(): Storage = Storage()
+
+    @Bean
+    fun fullPostRepository(client: DatabaseClient, converter: R2dbcConverter) = FullPostRepository(client, converter)
 }

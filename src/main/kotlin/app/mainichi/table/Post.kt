@@ -1,12 +1,12 @@
-package app.mainichi.objects
+package app.mainichi.table
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table
 
-@Table("comments")
-data class Comment(
+@Table("posts")
+open class Post(
     @Id
     val snowflake: Long,
     val author: Long,
-    val content: String,
+    val content: String
 )
