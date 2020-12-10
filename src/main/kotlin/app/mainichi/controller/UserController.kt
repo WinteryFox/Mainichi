@@ -141,7 +141,11 @@ class UserController(
                     user.birthday,
                     user.gender,
                     user.summary,
-                    storage.putWithHash(AVATARS_LOCATION, file.readBytes(), MediaType.IMAGE_PNG_VALUE).name
+                    storage.putWithHash(
+                        AVATARS_LOCATION,
+                        file.readBytes(),
+                        MediaType.IMAGE_PNG_VALUE
+                    ).name.substringAfter('/')
                 )
             )
 

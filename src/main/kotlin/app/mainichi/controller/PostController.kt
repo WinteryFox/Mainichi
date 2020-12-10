@@ -61,7 +61,6 @@ class PostController(val postRepository: PostRepository) {
         @PathVariable("postSnowflake")
         postSnowflake: Long,
         ): Post? {
-        TODO("Test")
         val post = postRepository.findById(postSnowflake.toString())
         val form = exchange.awaitFormData().toSingleValueMap().toMap()
         val content = form["content"]
