@@ -1,21 +1,23 @@
 package app.mainichi.`object`
 
 import app.mainichi.table.Comment
-import app.mainichi.table.Like
-import app.mainichi.table.Post
 
 class FullPost(
-    snowflake: Long,
-    author: Long,
-    content: String,
-    val likes: Array<Like>,
-    val comments: Array<Comment>
-) : Post(snowflake, author, content) {
-    constructor(post: Post, likes: Array<Like>, comments: Array<Comment>) : this(
-        post.snowflake,
-        post.author,
-        post.content,
-        likes,
-        comments
-    )
+    val snowflake: Long,
+    val author: Long,
+    val content: String,
+    val likers: Array<Long>,
+    private val commentSnowflakes: Array<Long>,
+    private val commentPosts: Array<Long>,
+    private val commentCommenters: Array<Long>,
+    private val commentContents: Array<String>
+) {
+    val comments: Array<Comment> = commentSnowflakes.mapIndexed { index, s ->
+        Comment(
+            s,
+            commentPosts[index],
+            commentCommenters[index],
+            commentContents[index]
+        )
+    }.toTypedArray()
 }
