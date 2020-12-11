@@ -1,10 +1,10 @@
 package app.mainichi.controller
 
 import app.mainichi.`object`.FullPost
+import app.mainichi.repository.CommentRepository
 import app.mainichi.table.Post
 import app.mainichi.repository.FullPostRepository
 import app.mainichi.repository.PostRepository
-import kotlinx.coroutines.flow.Flow
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.reactive.server.awaitFormData
@@ -23,19 +23,22 @@ class PostController(
      * Request all post data
      */
     @GetMapping("/posts")
-    suspend fun getAllPosts(
-        exchange: ServerWebExchange
-    ): Flow<FullPost> = fullPostRepository.findAll()
+    suspend fun getAllPosts() = fullPostRepository.findAll()
+
+    @GetMapping("/posts/{snowflake}")
+    suspend fun getPost(
+        @PathVariable
+        snowflake: Long
+    ) = fullPostRepository.findBySnowflake(snowflake)
 
     /**
      * Request all post data from a specific user
      */
-    @GetMapping("/users/{userSnowflake}/posts")
+    @GetMapping("/users/{snowflake}/posts")
     suspend fun getPostsFromUser(
-        exchange: ServerWebExchange,
-        @PathVariable("userSnowflake")
+        @PathVariable("snowflake")
         userSnowflake: Long
-    ): Flow<Post> = postRepository.findAllByAuthor(userSnowflake)
+    ) = fullPostRepository.findAllByAuthor(userSnowflake)
 
     /**
      * Creates a post and attaches it to the current logged in user
@@ -59,10 +62,10 @@ class PostController(
     /**
      * Updates selected post
      */
-    @RequestMapping("/posts/{postSnowflake}", method = [RequestMethod.POST])
+    @PostMapping("/posts/{snowflake}")
     suspend fun updatePost(
         exchange: ServerWebExchange,
-        @PathVariable("postSnowflake")
+        @PathVariable("snowflake")
         postSnowflake: Long,
         ): Post? {
         val post = postRepository.findById(postSnowflake.toString())

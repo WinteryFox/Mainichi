@@ -7,6 +7,7 @@ import org.springframework.data.relational.core.mapping.Table
 data class Comment(
     @Id
     val snowflake: Long,
-    val author: Long,
+    val post: Long,
+    val commenter: Long,
     val content: String,
 )
