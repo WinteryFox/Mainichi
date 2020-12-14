@@ -1,16 +1,15 @@
 CREATE EXTENSION snowflake;
 
-CREATE DOMAIN GENDER CHAR(1) CHECK (value IN ('F', 'M'));
-
 CREATE TABLE users
 (
     snowflake BIGINT PRIMARY KEY DEFAULT next_snowflake(0, TIMESTAMP '2020-01-01 00:00:00'), -- The ID of the user
     email     TEXT NOT NULL,                                                                 -- The user's email
     username  TEXT NOT NULL,                                                                 -- The username of the user
-    gender    GENDER             DEFAULT NULL,                                               -- The gender of the user (female, male, unknown)
+    gender    CHAR               DEFAULT NULL,                                               -- The gender of the user (female, male, unknown)
     birthday  DATE               DEFAULT NULL,                                               -- The user's birthday
     summary   TEXT               DEFAULT NULL,                                               -- The summary/description/self-introduction of the user
-    avatar    TEXT               DEFAULT NULL                                                -- The user's avatar hash
+    avatar    TEXT               DEFAULT NULL,                                               -- The user's avatar hash
+    CHECK (gender IN ('F', 'M'))
 );
 
 CREATE TABLE learning

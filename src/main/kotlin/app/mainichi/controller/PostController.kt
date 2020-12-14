@@ -1,10 +1,9 @@
 package app.mainichi.controller
 
-import app.mainichi.`object`.FullPost
 import app.mainichi.repository.CommentRepository
-import app.mainichi.table.Post
-import app.mainichi.repository.FullPostRepository
 import app.mainichi.repository.PostRepository
+import app.mainichi.table.Post
+import app.mainichi.repository.ShortPostRepository
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.reactive.server.awaitFormData
@@ -17,28 +16,35 @@ import org.springframework.web.server.ServerWebExchange
 @RestController
 class PostController(
     val postRepository: PostRepository,
-    val fullPostRepository: FullPostRepository
+    val shortPostRepository: ShortPostRepository,
+    val commentRepository: CommentRepository
 ) {
     /**
      * Request all post data
      */
     @GetMapping("/posts")
-    suspend fun getAllPosts() = fullPostRepository.findAll()
+    fun getAllPosts() = shortPostRepository.findAll()
 
     @GetMapping("/posts/{snowflake}")
-    suspend fun getPost(
+    fun getPost(
         @PathVariable
         snowflake: Long
-    ) = fullPostRepository.findBySnowflake(snowflake)
+    ) = shortPostRepository.findBySnowflake(snowflake)
+
+    @GetMapping("/posts/{snowflake}/comments")
+    suspend fun getPostComments(
+        @PathVariable
+        snowflake: Long
+    ) = commentRepository.findAllByPost(snowflake)
 
     /**
      * Request all post data from a specific user
      */
     @GetMapping("/users/{snowflake}/posts")
-    suspend fun getPostsFromUser(
+    fun getPostsFromUser(
         @PathVariable("snowflake")
         userSnowflake: Long
-    ) = fullPostRepository.findAllByAuthor(userSnowflake)
+    ) = shortPostRepository.findAllByAuthor(userSnowflake)
 
     /**
      * Creates a post and attaches it to the current logged in user
