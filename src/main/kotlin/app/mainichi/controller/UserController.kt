@@ -7,6 +7,7 @@ import app.mainichi.MIN_AVATAR_WIDTH
 import app.mainichi.data.Storage
 import app.mainichi.table.User
 import app.mainichi.repository.UserRepository
+import com.google.cloud.storage.StorageException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.reactive.awaitSingleOrNull
 import org.springframework.core.io.ByteArrayResource
@@ -32,6 +33,12 @@ class UserController(
     val userRepository: UserRepository,
     val storage: Storage
 ) {
+    @GetMapping("/users/{snowflake}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    suspend fun getUser(
+        @PathVariable
+        snowflake: Long
+    ): User? = userRepository.findById(snowflake.toString())
+
     /**
      * Request own user data
      */
@@ -95,7 +102,12 @@ class UserController(
         exchange: ServerWebExchange,
         @PathVariable("hash")
         hash: String
-    ): Resource = ByteArrayResource(storage.get("avatars/$hash").array())
+    ): Resource? = try {
+        ByteArrayResource(storage.get("avatars/$hash").array())
+    } catch (exception: StorageException) {
+        exchange.response.statusCode = HttpStatus.GATEWAY_TIMEOUT
+        null
+    }
 
     /**
      * Update own avatar
@@ -133,27 +145,32 @@ class UserController(
             }
 
             // Save the image to the bucket and update the user's avatar in the database
-            val updatedUser = userRepository.save(
-                User(
-                    user.snowflake,
-                    user.email,
-                    user.username,
-                    user.birthday,
-                    user.gender,
-                    user.summary,
-                    storage.putWithHash(
-                        AVATARS_LOCATION,
-                        file.readBytes(),
-                        MediaType.IMAGE_PNG_VALUE
-                    ).name.substringAfter('/')
+            try {
+                val updatedUser = userRepository.save(
+                    User(
+                        user.snowflake,
+                        user.email,
+                        user.username,
+                        user.birthday,
+                        user.gender,
+                        user.summary,
+                        storage.putWithHash(
+                            AVATARS_LOCATION,
+                            file.readBytes(),
+                            MediaType.IMAGE_PNG_VALUE
+                        ).name.substringAfter('/')
+                    )
                 )
-            )
 
-            // Delete the old avatar if it wasn't null and it isn't the same as the previous one
-            if (user.avatar != null && updatedUser.avatar != user.avatar)
-                storage.delete("$AVATARS_LOCATION/${user.avatar}")
+                // Delete the old avatar if it wasn't null and it isn't the same as the previous one
+                if (user.avatar != null && updatedUser.avatar != user.avatar)
+                    storage.delete("$AVATARS_LOCATION/${user.avatar}")
 
-            return updatedUser
+                return updatedUser
+            } catch (exception: StorageException) {
+                exchange.response.statusCode = HttpStatus.GATEWAY_TIMEOUT
+                return null
+            }
         } catch (exception: IOException) {
             exchange.response.statusCode = HttpStatus.BAD_REQUEST
             return null

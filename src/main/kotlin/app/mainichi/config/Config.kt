@@ -9,6 +9,8 @@ import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
 import reactor.core.publisher.Mono
 
 /**
@@ -30,6 +32,13 @@ class Config(
     ): SecurityWebFilterChain = httpSecurity
         .csrf()
         .disable() // TODO: Enable when testing finishes
+        .cors()
+        .configurationSource {
+            val cors = CorsConfiguration()
+            cors.allowedOrigins = listOf("*")
+            return@configurationSource cors
+        }
+        .and()
         .authorizeExchange()
         .pathMatchers(
             HttpMethod.GET,
@@ -37,9 +46,9 @@ class Config(
             "/register",
             "/avatars/*.png",
             "/posts",
-            "/users/*/posts"
+            "/users/*/posts",
+            "/users/{snowflake}"
         ).permitAll()
-        .pathMatchers(HttpMethod.GET, "/logout").authenticated()
         .anyExchange().authenticated() // Any other requests must be authenticated
         .and()
         .oauth2Login(::withConfiguration) // Sets up OAuth2 login (with Google and eventual other providers)
