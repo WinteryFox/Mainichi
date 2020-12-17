@@ -47,7 +47,7 @@ class Config(
             "/avatars/*.png",
             "/posts",
             "/users/*/posts",
-            "/users/{snowflake}"
+            "/users/{snowflakes}"
         ).permitAll()
         .anyExchange().authenticated() // Any other requests must be authenticated
         .and()

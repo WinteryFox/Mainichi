@@ -33,21 +33,12 @@ class UserController(
     val userRepository: UserRepository,
     val storage: Storage
 ) {
-    @GetMapping("/users/{snowflake}", produces = [MediaType.APPLICATION_JSON_VALUE])
-    suspend fun getUser(
+    @GetMapping("/users/{snowflakes}")
+    suspend fun getUsers(
         exchange: ServerWebExchange,
         @PathVariable
-        snowflake: Long
-    ): User? {
-        val user = userRepository.findById(snowflake.toString())
-
-        if (user == null) {
-            exchange.response.statusCode = HttpStatus.NOT_FOUND
-            return null
-        }
-
-        return user
-    }
+        snowflakes: Set<String>
+    ) = userRepository.findAllById(snowflakes)
 
     /**
      * Request own user data
