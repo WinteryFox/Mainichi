@@ -44,9 +44,9 @@ class Config(
             HttpMethod.GET,
             "/login",
             "/register",
-            "/avatars/*.png",
+            "/avatars/{hash}.png",
             "/posts",
-            "/users/*/posts",
+            "/users/{snowflake}/posts",
             "/users/{snowflakes}"
         ).permitAll()
         .anyExchange().authenticated() // Any other requests must be authenticated

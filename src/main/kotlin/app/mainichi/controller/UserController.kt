@@ -5,13 +5,18 @@ import app.mainichi.MAX_AVATAR_SIZE
 import app.mainichi.MAX_AVATAR_WIDTH
 import app.mainichi.MIN_AVATAR_WIDTH
 import app.mainichi.data.Storage
+import app.mainichi.data.toBuffer
 import app.mainichi.table.User
 import app.mainichi.repository.UserRepository
+import app.mainichi.table.PartialUser
+import com.google.cloud.storage.Blob
 import com.google.cloud.storage.StorageException
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.reactive.awaitSingleOrNull
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
+import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.codec.multipart.FilePart
@@ -21,8 +26,11 @@ import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ServerWebExchange
 import java.io.IOException
 import java.nio.file.Files
+import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
+import java.util.concurrent.TimeUnit
 import javax.imageio.ImageIO
 
 /**
@@ -39,6 +47,7 @@ class UserController(
         @PathVariable
         snowflakes: Set<String>
     ) = userRepository.findAllById(snowflakes)
+        .map { PartialUser(it) }
 
     /**
      * Request own user data
@@ -46,7 +55,15 @@ class UserController(
     @GetMapping("/users/@me", produces = [MediaType.APPLICATION_JSON_VALUE])
     suspend fun getSelf(
         exchange: ServerWebExchange
-    ): User = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
+    ): User? {
+        val snowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String?
+        if (snowflake == null) {
+            exchange.response.statusCode = HttpStatus.UNAUTHORIZED
+            return null
+        }
+
+        return userRepository.findById(snowflake)!!
+    }
 
     /**
      * Update own user data, allows changes to username, birthday, gender and birthday
@@ -103,11 +120,24 @@ class UserController(
         exchange: ServerWebExchange,
         @PathVariable("hash")
         hash: String
-    ): Resource? = try {
-        ByteArrayResource(storage.get("avatars/$hash").array())
-    } catch (exception: StorageException) {
-        exchange.response.statusCode = HttpStatus.GATEWAY_TIMEOUT
-        null
+    ): Resource? {
+        try {
+            val blob: Blob? = storage.get("avatars/$hash")
+            if (blob == null) {
+                exchange.response.statusCode = HttpStatus.BAD_REQUEST
+                return null
+            }
+
+            exchange.response.headers.apply {
+                this.cacheControl = CacheControl.maxAge(Duration.ofDays(365)).cachePublic().headerValue + ", immutable"
+                this.expires = Instant.now().plus(Duration.ofDays(365)).toEpochMilli()
+                this.lastModified = blob.updateTime
+            }
+            return ByteArrayResource(blob.toBuffer().array())
+        } catch (exception: StorageException) {
+            exchange.response.statusCode = HttpStatus.INTERNAL_SERVER_ERROR
+            return null
+        }
     }
 
     /**

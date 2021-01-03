@@ -41,17 +41,21 @@ class Storage {
             )
         }
 
-    suspend fun get(key: String): ByteBuffer =
+    suspend fun get(key: String): Blob? =
         withContext(Dispatchers.IO) {
-            val blob = bucket.get(key) ?: return@withContext ByteBuffer.allocate(0)
-            val buffer = ByteBuffer.allocate(blob.size.toInt())
-            blob.reader().read(buffer)
-
-            return@withContext buffer
+            return@withContext bucket.get(key)
         }
 
     suspend fun delete(key: String) =
         withContext(Dispatchers.IO) {
             return@withContext bucket.get(key)?.delete()
         }
+}
+
+@Suppress("BlockingMethodInNonBlockingContext")
+fun Blob.toBuffer(): ByteBuffer { // TODO: Should be in coroutine scope
+    val buffer = ByteBuffer.allocate(this.size.toInt())
+    this.reader().read(buffer)
+
+    return buffer
 }
