@@ -35,7 +35,9 @@ class Config(
         .cors()
         .configurationSource {
             val cors = CorsConfiguration()
-            cors.allowedOrigins = listOf("*")
+            cors.allowedOrigins = listOf("http://localhost:8080")
+            cors.allowCredentials = true
+            cors.validateAllowCredentials()
             return@configurationSource cors
         }
         .and()
