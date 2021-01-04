@@ -19,12 +19,12 @@ import org.springframework.core.io.Resource
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.reactive.server.awaitFormData
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ServerWebExchange
-import java.io.IOException
 import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
@@ -152,59 +152,61 @@ class UserController(
         exchange: ServerWebExchange,
         @RequestPart("avatar")
         part: FilePart
-    ): User? {
-        @Suppress("BlockingMethodInNonBlockingContext")
-        val file = withContext(Dispatchers.IO) { Files.createTempFile(null, null) }.toFile()
-        part.transferTo(file).awaitSingleOrNull()
-        val user = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
+    ): ResponseEntity<Any> {
+        val snowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String?
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val user = userRepository.findById(snowflake)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
 
+        @Suppress("BlockingMethodInNonBlockingContext")
+        val path = withContext(Dispatchers.IO) { Files.createTempFile(null, null) }
+        val file = path.toFile()
         try {
-            // Test if the file being sent to us is actually an image and check its size
+            part.transferTo(file).awaitSingleOrNull()
+
             if (file.length() > MAX_AVATAR_SIZE)
-                throw IOException()
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Avatar exceeds max size of $MAX_AVATAR_SIZE")
 
             @Suppress("BlockingMethodInNonBlockingContext")
-            withContext(Dispatchers.IO) {
-                val image = ImageIO.read(file)
+            val type = withContext(Dispatchers.IO) { Files.probeContentType(path) }
+            if (type != MediaType.IMAGE_PNG_VALUE)
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Avatar is not a PNG file")
 
-                if (// Image must be between 256x256 and 512x512 pixels
-                    image.width < MIN_AVATAR_WIDTH || image.width > MAX_AVATAR_WIDTH ||
-                    // and it must be square
-                    image.width != image.height
-                )
-                    throw IOException()
+            @Suppress("BlockingMethodInNonBlockingContext")
+            val image = withContext(Dispatchers.IO) { ImageIO.read(file) }
+            when {
+                image.width < MIN_AVATAR_WIDTH -> return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Avatar is less than $MIN_AVATAR_WIDTH pixels wide")
+                image.height > MAX_AVATAR_WIDTH -> return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Avatar is more than $MAX_AVATAR_WIDTH pixels wide")
+                image.width != image.height -> return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Avatar is not square")
             }
 
             // Save the image to the bucket and update the user's avatar in the database
-            try {
-                val updatedUser = userRepository.save(
-                    User(
-                        user.snowflake,
-                        user.email,
-                        user.username,
-                        user.birthday,
-                        user.gender,
-                        user.summary,
-                        storage.putWithHash(
-                            AVATARS_LOCATION,
-                            file.readBytes(),
-                            MediaType.IMAGE_PNG_VALUE
-                        ).name.substringAfter('/')
-                    )
+            val updatedUser = userRepository.save(
+                User(
+                    user.snowflake,
+                    user.email,
+                    user.username,
+                    user.birthday,
+                    user.gender,
+                    user.summary,
+                    storage.putWithHash(
+                        AVATARS_LOCATION,
+                        file.readBytes(),
+                        MediaType.IMAGE_PNG_VALUE
+                    ).name.substringAfter('/')
                 )
+            )
 
-                // Delete the old avatar if it wasn't null and it isn't the same as the previous one
-                if (user.avatar != null && updatedUser.avatar != user.avatar)
-                    storage.delete("$AVATARS_LOCATION/${user.avatar}")
+            // Delete the old avatar if it wasn't null and it isn't the same as the previous one
+            if (user.avatar != null && updatedUser.avatar != user.avatar)
+                storage.delete("$AVATARS_LOCATION/${user.avatar}")
 
-                return updatedUser
-            } catch (exception: StorageException) {
-                exchange.response.statusCode = HttpStatus.GATEWAY_TIMEOUT
-                return null
-            }
-        } catch (exception: IOException) {
-            exchange.response.statusCode = HttpStatus.BAD_REQUEST
-            return null
+            return ResponseEntity.ok(updatedUser)
         } finally {
             file.delete()
         }

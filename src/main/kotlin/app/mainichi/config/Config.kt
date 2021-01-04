@@ -34,11 +34,13 @@ class Config(
         .disable() // TODO: Enable when testing finishes
         .cors()
         .configurationSource {
-            val cors = CorsConfiguration()
-            cors.allowedOrigins = listOf("http://localhost:8080")
-            cors.allowCredentials = true
-            cors.validateAllowCredentials()
-            return@configurationSource cors
+            CorsConfiguration()
+                .apply {
+                    if (System.getProperty("debug") != null) {
+                        allowedOrigins = listOf("http://localhost:8080")
+                        allowCredentials = true
+                    }
+                }
         }
         .and()
         .authorizeExchange()
