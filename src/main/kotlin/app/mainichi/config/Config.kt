@@ -1,6 +1,8 @@
 package app.mainichi.config
 
 import app.mainichi.component.AuthenticationSuccessHandler
+import app.mainichi.component.LogoutSuccessHandler
+import app.mainichi.component.OAuth2AuthorizationRequestResolver
 import app.mainichi.data.Storage
 import app.mainichi.session.AttributeService
 import org.springframework.context.annotation.Bean
@@ -10,8 +12,6 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.web.cors.CorsConfiguration
-import org.springframework.web.cors.CorsConfigurationSource
-import reactor.core.publisher.Mono
 
 /**
  * Configures Spring Security, so that certain pages and actions
@@ -21,7 +21,9 @@ import reactor.core.publisher.Mono
 @Configuration
 @EnableWebFluxSecurity
 class Config(
-    private val authenticationSuccessHandler: AuthenticationSuccessHandler
+    private val authorizationRequestResolver: OAuth2AuthorizationRequestResolver,
+    private val authenticationSuccessHandler: AuthenticationSuccessHandler,
+    private val logoutSuccessHandler: LogoutSuccessHandler
 ) {
     /**
      * Configures REST endpoints security
@@ -57,6 +59,9 @@ class Config(
         .anyExchange().authenticated() // Any other requests must be authenticated
         .and()
         .oauth2Login(::withConfiguration) // Sets up OAuth2 login (with Google and eventual other providers)
+        .logout()
+        .logoutSuccessHandler(logoutSuccessHandler)
+        .and()
         .build()
 
     /**
@@ -67,11 +72,8 @@ class Config(
      */
     fun withConfiguration(spec: ServerHttpSecurity.OAuth2LoginSpec): Unit =
         spec
+            .authorizationRequestResolver(authorizationRequestResolver)
             .authenticationSuccessHandler(authenticationSuccessHandler)
-            .authenticationFailureHandler { _, error ->
-                error.printStackTrace()
-                return@authenticationFailureHandler Mono.empty<Void>()
-            }
             .run {}
 
     @Bean
