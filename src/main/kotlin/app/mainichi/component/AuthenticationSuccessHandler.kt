@@ -4,7 +4,6 @@ import app.mainichi.table.User
 import app.mainichi.repository.UserRepository
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.mono
-import org.springframework.http.HttpStatus
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.web.server.DefaultServerRedirectStrategy

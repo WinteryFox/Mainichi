@@ -12,6 +12,7 @@ import java.time.Instant
 import java.time.Instant.now
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.properties.Delegates
 
 class R2dbcWebSession(
     private val repository: R2dbcWebSessionRepository,
@@ -22,6 +23,8 @@ class R2dbcWebSession(
 ) : WebSession {
     private val sessionData = AtomicReference(session to started)
     private val session get() = sessionData.get().first
+
+    var snowflake: Long? = null
 
     override fun getId(): String = session.id.toString()
 

@@ -49,8 +49,6 @@ class Config(
         .authorizeExchange()
         .pathMatchers(
             HttpMethod.GET,
-            "/login",
-            "/register",
             "/avatars/{hash}.png",
             "/posts",
             "/users/{snowflake}/posts",
@@ -58,23 +56,16 @@ class Config(
         ).permitAll()
         .anyExchange().authenticated() // Any other requests must be authenticated
         .and()
-        .oauth2Login(::withConfiguration) // Sets up OAuth2 login (with Google and eventual other providers)
+        .httpBasic().disable()
+        .formLogin().disable()
+        .oauth2Login()
+        .authorizationRequestResolver(authorizationRequestResolver)
+        .authenticationSuccessHandler(authenticationSuccessHandler)
+        .and()
         .logout()
         .logoutSuccessHandler(logoutSuccessHandler)
         .and()
         .build()
-
-    /**
-     * Sets up a handler for successful and unsuccessful login attempts.
-     * A successful login attempt will execute [AuthenticationSuccessHandler]
-     *
-     * @see AuthenticationSuccessHandler
-     */
-    fun withConfiguration(spec: ServerHttpSecurity.OAuth2LoginSpec): Unit =
-        spec
-            .authorizationRequestResolver(authorizationRequestResolver)
-            .authenticationSuccessHandler(authenticationSuccessHandler)
-            .run {}
 
     @Bean
     fun bucket(): Storage = Storage()
