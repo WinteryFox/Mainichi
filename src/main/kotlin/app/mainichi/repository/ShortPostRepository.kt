@@ -3,8 +3,10 @@ package app.mainichi.repository
 import app.mainichi.`object`.ShortPost
 import org.springframework.data.r2dbc.convert.R2dbcConverter
 import org.springframework.r2dbc.core.DatabaseClient
+import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 @Component
 class ShortPostRepository(
@@ -39,7 +41,7 @@ class ShortPostRepository(
             .map { row, metadata -> converter.read(ShortPost::class.java, row, metadata) }
             .all()
 
-    fun findBySnowflake(snowflake: Long): Flux<ShortPost> =
+    suspend fun findBySnowflake(snowflake: Long): ShortPost? =
         client.sql("""
             SELECT p.*,
                    count(l.*) like_count,
@@ -52,5 +54,5 @@ class ShortPostRepository(
         """.trimIndent())
             .bind("snowflake", snowflake)
             .map { row, metadata -> converter.read(ShortPost::class.java, row, metadata) }
-            .all()
+            .awaitSingleOrNull()
 }

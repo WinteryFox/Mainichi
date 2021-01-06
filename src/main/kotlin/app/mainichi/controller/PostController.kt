@@ -5,6 +5,7 @@ import app.mainichi.repository.PostRepository
 import app.mainichi.table.Post
 import app.mainichi.repository.ShortPostRepository
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.reactive.server.awaitFormData
 import org.springframework.web.reactive.server.awaitSession
@@ -26,7 +27,7 @@ class PostController(
     fun getAllPosts() = shortPostRepository.findAll()
 
     @GetMapping("/posts/{snowflake}")
-    fun getPost(
+    suspend fun getPost(
         @PathVariable
         snowflake: Long
     ) = shortPostRepository.findBySnowflake(snowflake)
@@ -49,15 +50,17 @@ class PostController(
     /**
      * Creates a post and attaches it to the current logged in user
      */
-    @PostMapping("/posts")
+    @PostMapping(
+        "/posts",
+        consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
     suspend fun createPost(
         exchange: ServerWebExchange
     ): Post? {
         val userSnowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String
-        val form = exchange.awaitFormData().toSingleValueMap().toMap()
-
-        val content = form["content"]
-        if (content == null || content.length >= 1024 || content.length <= 16) {
+        val content = exchange.awaitFormData().toSingleValueMap().toMap()["content"]
+        if (content == null || content.length >= 1024 || content.isEmpty()) {
             exchange.response.statusCode = HttpStatus.BAD_REQUEST
             return null
         }
@@ -68,7 +71,11 @@ class PostController(
     /**
      * Updates selected post
      */
-    @PostMapping("/posts/{snowflake}")
+    @PostMapping(
+        "/posts/{snowflake}",
+        consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
     suspend fun updatePost(
         exchange: ServerWebExchange,
         @PathVariable("snowflake")

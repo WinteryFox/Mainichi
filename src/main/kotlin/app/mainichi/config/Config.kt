@@ -39,6 +39,7 @@ class Config(
                     if (System.getProperty("debug") != null) {
                         allowedOrigins = listOf("http://localhost:8080")
                         allowCredentials = true
+                        allowedMethods = listOf("*")
                     }
                 }
         }
