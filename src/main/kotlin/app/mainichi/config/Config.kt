@@ -54,6 +54,7 @@ class Config(
             HttpMethod.GET,
             "/avatars/{hash}.png",
             "/posts",
+            "/languages",
             "/users/{snowflake}/posts",
             "/users/{snowflakes}",
             "/users/{snowflake}/languages"
