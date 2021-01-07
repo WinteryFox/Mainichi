@@ -6,12 +6,17 @@ import app.mainichi.MAX_AVATAR_WIDTH
 import app.mainichi.MIN_AVATAR_WIDTH
 import app.mainichi.data.Storage
 import app.mainichi.data.toBuffer
+import app.mainichi.repository.LearningRepository
+import app.mainichi.repository.ProficientRepository
 import app.mainichi.table.User
 import app.mainichi.repository.UserRepository
+import app.mainichi.table.Learning
 import app.mainichi.table.PartialUser
+import app.mainichi.table.Proficient
 import com.google.cloud.storage.Blob
 import com.google.cloud.storage.StorageException
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.reactive.awaitSingleOrNull
 import org.springframework.core.io.ByteArrayResource
@@ -32,6 +37,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import java.util.concurrent.TimeUnit
 import javax.imageio.ImageIO
+import kotlin.streams.toList
 
 /**
  * REST controller for user data
@@ -39,6 +45,8 @@ import javax.imageio.ImageIO
 @RestController
 class UserController(
     val userRepository: UserRepository,
+    val learningRepository: LearningRepository,
+    val proficientRepository: ProficientRepository,
     val storage: Storage
 ) {
     @GetMapping("/users/{snowflakes}")
@@ -63,6 +71,29 @@ class UserController(
         }
 
         return userRepository.findById(snowflake)!!
+    }
+
+    /**
+     * Updates the proficient and the learning languages of the user
+     */
+    @PostMapping("/users/@me/languages", consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE])
+    suspend fun updateLanguages(
+        exchange: ServerWebExchange
+    ){
+        val user = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
+        val form = exchange.awaitFormData()
+
+        val learning = form["learning"]
+        val proficient = form["proficient"]
+
+        //check if keys are present, if not return
+        if (learning == null || learning.size == 0 || proficient == null || proficient.size == 0 ){
+            exchange.response.statusCode = HttpStatus.BAD_REQUEST
+            return
+        }
+
+        learningRepository.saveAll(learning.stream().map { Learning(user.snowflake, it, 1) }.toList()).collect() //TODO change proficiency
+        proficientRepository.saveAll(proficient.stream().map { Proficient(user.snowflake, it) }.toList()).collect()
     }
 
     /**
