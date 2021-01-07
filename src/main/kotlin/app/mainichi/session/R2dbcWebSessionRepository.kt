@@ -18,7 +18,7 @@ interface R2dbcWebSessionRepository : CoroutineCrudRepository<Session, UUID> {
         """
             UPDATE sessions
             SET last_access_time = current_timestamp
-            WHERE id = :id
+            WHERE id = :id AND valid = true
             RETURNING *
         """
     )

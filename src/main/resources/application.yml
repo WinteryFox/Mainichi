@@ -1,0 +1,21 @@
+debug: false
+
+server:
+  port: 8181
+
+spring:
+  webflux:
+    base-path: "/api"
+  r2dbc:
+    username: "postgres"
+    name: "postgres"
+    password: "${POSTGRES_PASSWORD}"
+    url: "r2dbc:postgres://localhost"
+  rsocket:
+    server:
+      mapping-path: "/gateway"
+      transport: "websocket"
+  security.oauth2.client.registration:
+    google:
+      clientId: "${GOOGLE_CLIENT_ID}"
+      clientSecret: "${GOOGLE_CLIENT_SECRET}"

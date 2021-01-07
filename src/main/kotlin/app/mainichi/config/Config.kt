@@ -1,8 +1,11 @@
 package app.mainichi.config
 
 import app.mainichi.component.AuthenticationSuccessHandler
+import app.mainichi.component.LogoutSuccessHandler
+import app.mainichi.component.OAuth2AuthorizationRequestResolver
 import app.mainichi.data.Storage
 import app.mainichi.session.AttributeService
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -10,8 +13,6 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.web.cors.CorsConfiguration
-import org.springframework.web.cors.CorsConfigurationSource
-import reactor.core.publisher.Mono
 
 /**
  * Configures Spring Security, so that certain pages and actions
@@ -21,14 +22,18 @@ import reactor.core.publisher.Mono
 @Configuration
 @EnableWebFluxSecurity
 class Config(
-    private val authenticationSuccessHandler: AuthenticationSuccessHandler
+    private val authorizationRequestResolver: OAuth2AuthorizationRequestResolver,
+    private val authenticationSuccessHandler: AuthenticationSuccessHandler,
+    private val logoutSuccessHandler: LogoutSuccessHandler
 ) {
     /**
      * Configures REST endpoints security
      */
     @Bean
     fun securityFilterChain(
-        httpSecurity: ServerHttpSecurity
+        httpSecurity: ServerHttpSecurity,
+        @Value("\${debug}")
+        debug: Boolean
     ): SecurityWebFilterChain = httpSecurity
         .csrf()
         .disable() // TODO: Enable when testing finishes
@@ -36,7 +41,7 @@ class Config(
         .configurationSource {
             CorsConfiguration()
                 .apply {
-                    if (System.getProperty("debug") != null) {
+                    if (debug) {
                         allowedOrigins = listOf("http://localhost:8080")
                         allowCredentials = true
                         allowedMethods = listOf("*")
@@ -47,8 +52,6 @@ class Config(
         .authorizeExchange()
         .pathMatchers(
             HttpMethod.GET,
-            "/login",
-            "/register",
             "/avatars/{hash}.png",
             "/posts",
             "/users/{snowflake}/posts",
@@ -56,23 +59,16 @@ class Config(
         ).permitAll()
         .anyExchange().authenticated() // Any other requests must be authenticated
         .and()
-        .oauth2Login(::withConfiguration) // Sets up OAuth2 login (with Google and eventual other providers)
+        .httpBasic().disable()
+        .formLogin().disable()
+        .oauth2Login()
+        .authorizationRequestResolver(authorizationRequestResolver)
+        .authenticationSuccessHandler(authenticationSuccessHandler)
+        .and()
+        .logout()
+        .logoutSuccessHandler(logoutSuccessHandler)
+        .and()
         .build()
-
-    /**
-     * Sets up a handler for successful and unsuccessful login attempts.
-     * A successful login attempt will execute [AuthenticationSuccessHandler]
-     *
-     * @see AuthenticationSuccessHandler
-     */
-    fun withConfiguration(spec: ServerHttpSecurity.OAuth2LoginSpec): Unit =
-        spec
-            .authenticationSuccessHandler(authenticationSuccessHandler)
-            .authenticationFailureHandler { _, error ->
-                error.printStackTrace()
-                return@authenticationFailureHandler Mono.empty<Void>()
-            }
-            .run {}
 
     @Bean
     fun bucket(): Storage = Storage()

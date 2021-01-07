@@ -21,8 +21,10 @@ import java.net.URI
 class AuthenticationSuccessHandler(
     val userRepository: UserRepository
 ) : ServerAuthenticationSuccessHandler {
+    val redirect = DefaultServerRedirectStrategy()
+
     override fun onAuthenticationSuccess(
-        webFilterExchange: WebFilterExchange,
+        filterExchange: WebFilterExchange,
         authentication: Authentication
     ): Mono<Void> = mono {
         // Get the user that logged in
@@ -32,15 +34,14 @@ class AuthenticationSuccessHandler(
         if (oAuth2User.attributes.containsKey("email")) {
             // Attempt to retrieve a user by that email
             val user = userRepository.findByEmail(oAuth2User.attributes["email"] as String)
-            val session = webFilterExchange.exchange.awaitSession()
-            session.start()
+            val session = filterExchange.exchange.awaitSession()
 
-            if (user != null)
-            // If such a user is found, put their ID in the session (so we know who this user is later)
+            if (user != null) {
+                // If such a user is found, put their ID in the session (so we know who this user is later)
                 session.attributes.putIfAbsent("SNOWFLAKE", user.snowflake.toString())
-            else
-            // If such a user does not exist, create an account using that email, and then put
-            // the newly created snowflake in the session
+            } else {
+                // If such a user does not exist, create an account using that email, and then put
+                // the newly created snowflake in the session
                 session.attributes.putIfAbsent(
                     "SNOWFLAKE",
                     userRepository.save(
@@ -55,15 +56,17 @@ class AuthenticationSuccessHandler(
                         )
                     ).snowflake.toString()
                 )
+            }
 
-            session.save()
-        } else {
-            TODO("Missing email field catch")
+            if (session.attributes.containsKey("redirect_uri")) {
+                redirect.sendRedirect(
+                    filterExchange.exchange,
+                    URI(session.attributes["redirect_uri"] as String)
+                ).awaitFirstOrNull()
+                session.attributes.remove("redirect_uri")
+            }
         }
 
-        // Redirect them back to the site
-        DefaultServerRedirectStrategy()
-            .sendRedirect(webFilterExchange.exchange, URI("http://localhost:8080"))
-            .awaitFirstOrNull() // TODO replace link with actual link
+        return@mono null
     }
 }
