@@ -5,6 +5,7 @@ import app.mainichi.component.LogoutSuccessHandler
 import app.mainichi.component.OAuth2AuthorizationRequestResolver
 import app.mainichi.data.Storage
 import app.mainichi.session.AttributeService
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -30,7 +31,9 @@ class Config(
      */
     @Bean
     fun securityFilterChain(
-        httpSecurity: ServerHttpSecurity
+        httpSecurity: ServerHttpSecurity,
+        @Value("\${debug}")
+        debug: Boolean
     ): SecurityWebFilterChain = httpSecurity
         .csrf()
         .disable() // TODO: Enable when testing finishes
@@ -38,7 +41,7 @@ class Config(
         .configurationSource {
             CorsConfiguration()
                 .apply {
-                    if (System.getProperty("debug") != null) {
+                    if (debug) {
                         allowedOrigins = listOf("http://localhost:8080")
                         allowCredentials = true
                         allowedMethods = listOf("*")
