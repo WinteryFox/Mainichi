@@ -12,12 +12,14 @@ import app.mainichi.table.User
 import app.mainichi.repository.UserRepository
 import app.mainichi.table.Learning
 import app.mainichi.table.PartialUser
+import app.mainichi.table.UserLanguages
 import app.mainichi.table.Proficient
 import com.google.cloud.storage.Blob
 import com.google.cloud.storage.StorageException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.reactive.awaitSingleOrNull
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
@@ -44,8 +46,8 @@ import kotlin.streams.toList
 @RestController
 class UserController(
     val userRepository: UserRepository,
-    val learningRepository: LearningRepository,
     val proficientRepository: ProficientRepository,
+    val learningRepository: LearningRepository,
     val storage: Storage
 ) {
     @GetMapping("/users/{snowflakes}")
@@ -240,5 +242,19 @@ class UserController(
         } finally {
             file.delete()
         }
+    }
+
+    @GetMapping("/users/{snowflake}/languages")
+    suspend fun getLanguages(
+        @PathVariable("snowflake")
+        snowflake: String
+    ): UserLanguages {
+        val proficient = proficientRepository.findAllById(setOf(snowflake)).toSet()
+        val learning = learningRepository.findAllById(setOf(snowflake)).toSet()
+
+        return UserLanguages(
+            proficient,
+            learning
+        )
     }
 }
