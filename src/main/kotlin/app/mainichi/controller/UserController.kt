@@ -14,10 +14,7 @@ import app.mainichi.table.*
 import com.google.cloud.storage.Blob
 import com.google.cloud.storage.StorageException
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toSet
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.reactive.awaitSingleOrNull
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
@@ -248,8 +245,11 @@ class UserController(
         @PathVariable("snowflake")
         snowflake: String
     ): UserLanguages {
-        val proficient = proficientRepository.findAllById(setOf(snowflake)).toSet()
-        val learning = learningRepository.findAllById(setOf(snowflake)).toSet()
+        val proficient = proficientRepository.findAllById(setOf(snowflake))
+            .map { it.language }
+            .toSet()
+        val learning = learningRepository.findAllById(setOf(snowflake))
+            .toSet()
 
         return UserLanguages(
             proficient,
