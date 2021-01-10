@@ -12,6 +12,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository
 import org.springframework.web.cors.CorsConfiguration
 
 /**
@@ -45,6 +46,7 @@ class Config(
                         allowedOrigins = listOf("http://localhost:8080")
                         allowCredentials = true
                         allowedMethods = listOf("*")
+                        allowedHeaders = listOf("*")
                     }
                 }
         }
@@ -57,7 +59,8 @@ class Config(
             "/languages",
             "/users/{snowflake}/posts",
             "/users/{snowflakes}",
-            "/users/{snowflake}/languages"
+            "/users/{snowflake}/languages",
+            "/posts/{snowflake}"
         ).permitAll()
         .anyExchange().authenticated() // Any other requests must be authenticated
         .and()
