@@ -11,7 +11,6 @@ import com.google.cloud.storage.Blob
 import com.google.cloud.storage.StorageException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactive.awaitSingleOrNull
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
@@ -21,13 +20,9 @@ import org.springframework.http.MediaType
 import org.springframework.http.codec.multipart.FilePart
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.reactive.server.awaitFormData
-import org.springframework.web.reactive.server.awaitMultipartData
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
-import reactor.core.publisher.Flux
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
@@ -61,12 +56,9 @@ class UserController(
     @GetMapping("/users/@me", produces = [MediaType.APPLICATION_JSON_VALUE])
     suspend fun getSelf(
         exchange: ServerWebExchange
-    ): User? {
+    ): User {
         val snowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String?
-        if (snowflake == null) {
-            exchange.response.statusCode = HttpStatus.UNAUTHORIZED
-            return null
-        }
+            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
 
         return userRepository.findById(snowflake)!!
     }
@@ -85,10 +77,8 @@ class UserController(
         val proficient = form["proficient"]
 
         //check if keys are present, if not return
-        if (learning == null || learning.size == 0 || proficient == null || proficient.size == 0) {
-            exchange.response.statusCode = HttpStatus.BAD_REQUEST
-            return
-        }
+        if (learning == null || learning.size == 0 || proficient == null || proficient.size == 0)
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST)
 
         learningRepository.saveAll(learning.stream().map { Learning(user.snowflake, it, 1) }.toList())
             .collect() //TODO change proficiency
@@ -145,13 +135,9 @@ class UserController(
         exchange: ServerWebExchange,
         @PathVariable("hash")
         hash: String
-    ): Resource? {
+    ): Resource {
         try {
-            val blob: Blob? = storage.get("avatars/$hash")
-            if (blob == null) {
-                exchange.response.statusCode = HttpStatus.BAD_REQUEST
-                return null
-            }
+            val blob: Blob = storage.get("avatars/$hash") ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST)
 
             exchange.response.headers.apply {
                 this.cacheControl = CacheControl.maxAge(Duration.ofDays(365)).cachePublic().headerValue + ", immutable"
@@ -160,8 +146,7 @@ class UserController(
             }
             return ByteArrayResource(blob.toBuffer().array())
         } catch (exception: StorageException) {
-            exchange.response.statusCode = HttpStatus.INTERNAL_SERVER_ERROR
-            return null
+            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
 
@@ -248,15 +233,6 @@ class UserController(
             learning
         )
     }
-
-    /*@PostMapping("/users/@me/languages")
-    suspend fun updateUserLanguages(
-        exchange: ServerWebExchange,
-        @RequestBody
-        update: UserLanguagesUpdateRequest
-    ) {
-
-    }*/
 
     @GetMapping("/languages")
     suspend fun getLanguages(): Flow<Language> =

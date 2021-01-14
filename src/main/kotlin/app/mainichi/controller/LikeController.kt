@@ -1,5 +1,6 @@
 package app.mainichi.controller
 
+import app.mainichi.repository.EditLikeRepository
 import app.mainichi.table.Like
 import app.mainichi.repository.LikeRepository
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +15,7 @@ import org.springframework.web.server.ServerWebExchange
 @RestController
 class LikeController(
     val likeRepository: LikeRepository,
-    val editLikeRepository: LikeRepository
+    val editLikeRepository: EditLikeRepository
     ) {
     @GetMapping("/posts/{snowflake}/likes")
     suspend fun getLikes(
