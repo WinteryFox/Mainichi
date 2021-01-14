@@ -8,6 +8,7 @@ plugins {
     kotlin("plugin.spring") version "1.4.10"
     id("org.springframework.boot") version "2.4.0"
     id("io.spring.dependency-management") version "1.0.10.RELEASE"
+    id("com.google.cloud.tools.jib") version "2.7.0"
 }
 
 group = "app.mainichi"
@@ -65,6 +66,9 @@ tasks.withType<Test> {
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs = listOf("-Xjsr305=strict")
-        jvmTarget = "15"
+        jvmTarget = "11"
     }
 }
+
+jib.from.image = "gcr.io/distroless/java:11"
+jib.to.image = "gcr.io/mainichi/api"

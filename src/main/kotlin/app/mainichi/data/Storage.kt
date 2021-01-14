@@ -14,12 +14,11 @@ import javax.xml.bind.DatatypeConverter
 
 @Suppress("BlockingMethodInNonBlockingContext")
 class Storage {
-    private val service = StorageOptions
+    private val options = StorageOptions
         .newBuilder()
-        .setProjectId(PROJECT_NAME)
-        .setCredentials(GoogleCredentials.fromStream(Storage::class.java.getResourceAsStream("/google_storage.json")))
+        .setCredentials(GoogleCredentials.getApplicationDefault())
         .build()
-        .service
+    private val service = options.service
     private val bucket = service.get(BUCKET_NAME)!!
 
     private suspend fun put(key: String, bytes: ByteArray, type: String? = null): Blob =

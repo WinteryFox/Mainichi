@@ -1,3 +1,0 @@
-[submodule "docker/PostgresSnowflake"]
-	path = docker/PostgresSnowflake
-	url = https://github.com/WinteryFox/PostgresSnowflake.git

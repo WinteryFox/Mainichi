@@ -138,4 +138,5 @@ gradle-app.setting
 
 .env
 
-src/main/resources/google_storage.json
+docker/secret/*
+!docker/secret/*.example

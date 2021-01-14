@@ -1,0 +1,46 @@
+version: "3.3"
+
+services:
+  postgres:
+    image: gcr.io/mainichi/postgres
+    env_file:
+      - "secret/api.env"
+    volumes:
+      - "postgres:/var/lib/postgresql/data"
+
+  api:
+    depends_on:
+      - postgres
+    image: gcr.io/mainichi/api
+    env_file:
+      - "secret/api.env"
+    ports:
+      - "8181"
+    volumes:
+      - "./secret/google_storage.json:/var/api/google_storage.json"
+
+  vue:
+    image: "gcr.io/mainichi/vue"
+    volumes:
+      - "vue:/var/www/html"
+
+  caddy:
+    depends_on:
+      - api
+      - vue
+    image: "caddy:2.3.0-alpine"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./Caddyfile:/etc/caddy/Caddyfile"
+      - "vue:/var/www/html"
+      - "caddy_data:/data"
+      - "caddy_config:/config"
+
+volumes:
+  caddy_data:
+  caddy_config:
+  vue:
+    driver: local
+  postgres:
