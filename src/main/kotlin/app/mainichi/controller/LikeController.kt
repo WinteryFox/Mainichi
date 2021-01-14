@@ -3,10 +3,8 @@ package app.mainichi.controller
 import app.mainichi.table.Like
 import app.mainichi.repository.LikeRepository
 import kotlinx.coroutines.flow.Flow
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RestController
+import kotlinx.coroutines.flow.map
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ServerWebExchange
 
@@ -15,34 +13,56 @@ import org.springframework.web.server.ServerWebExchange
  */
 @RestController
 class LikeController(
-    val likeRepository: LikeRepository
+    val likeRepository: LikeRepository,
+    val editLikeRepository: LikeRepository
     ) {
-    /**
-     * Request all like data from a specific user
-     */
-    @GetMapping("/users/{userSnowflake}/likes")
-    suspend fun getLikesFromUser(
-        exchange: ServerWebExchange,
-        @PathVariable("userSnowflake")
-        userSnowflake: Long
-    ): Flow<Like> = likeRepository.findAllByLiker(userSnowflake)
+    @GetMapping("/posts/{snowflake}/likes")
+    suspend fun getLikes(
+        @PathVariable("snowflake")
+        snowflake: Long
+    ): Flow<Long> =
+        likeRepository.findAllByPost(snowflake)
+            .map { it.liker }
 
-    /**
-     * Creates a like and attaches it to the current logged in user and selected post
-     */
-    @PostMapping("/posts/like/{postSnowflake}")
-    suspend fun createLike(
-        exchange: ServerWebExchange,
-        @PathVariable("postSnowflake")
-        postSnowflake: Long
+    @PostMapping("/posts/{snowflake}/likes")
+    suspend fun likePost(
+        @PathVariable("snowflake")
+        postSnowflake: Long,
+        exchange: ServerWebExchange
     ): Like {
+        //retrieve the logged in user
         val userSnowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String
 
-        return likeRepository.save(
+        //like the post as the current user
+        return editLikeRepository.save(
             Like(
-                userSnowflake.toLong(),
-                postSnowflake
+                postSnowflake,
+                userSnowflake.toLong()
             )
         )
     }
+
+    @DeleteMapping("/posts/{snowflake}/likes")
+    suspend fun deleteLike(
+        @PathVariable("snowflake")
+        postSnowflake: Long,
+        exchange: ServerWebExchange
+    ){
+        //retrieve the current user
+        val userSnowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String
+
+        editLikeRepository.delete(
+            Like(
+                postSnowflake,
+                userSnowflake.toLong()
+            )
+        )
+    }
+
+    @GetMapping("/users/{snowflake}/likes")
+    suspend fun getUserLikes(
+        @PathVariable("snowflake")
+        userSnowflake: Long
+    ): Flow<Long> = likeRepository.findAllByLiker(userSnowflake)
+        .map { it.post }
 }

@@ -5,10 +5,7 @@ import app.mainichi.`object`.UserUpdateRequest
 import app.mainichi.component.ResponseStatusCodeException
 import app.mainichi.data.Storage
 import app.mainichi.data.toBuffer
-import app.mainichi.repository.LanguageRepository
-import app.mainichi.repository.LearningRepository
-import app.mainichi.repository.ProficientRepository
-import app.mainichi.repository.UserRepository
+import app.mainichi.repository.*
 import app.mainichi.table.*
 import com.google.cloud.storage.Blob
 import com.google.cloud.storage.StorageException
@@ -48,7 +45,7 @@ class UserController(
     val proficientRepository: ProficientRepository,
     val learningRepository: LearningRepository,
     val languageRepository: LanguageRepository,
-    val storage: Storage
+    val storage: Storage,
 ) {
     @GetMapping("/users/{snowflakes}")
     suspend fun getUsers(

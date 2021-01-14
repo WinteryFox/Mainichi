@@ -10,3 +10,4 @@ data class Post(
     val author: Long,
     val content: String
 )
+
