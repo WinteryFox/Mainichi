@@ -1,9 +1,12 @@
 package app.mainichi.controller
 
+import app.mainichi.`object`.ShortPost
+import app.mainichi.event.PostCreateEvent
 import app.mainichi.repository.CommentRepository
 import app.mainichi.repository.PostRepository
 import app.mainichi.table.Post
 import app.mainichi.repository.ShortPostRepository
+import app.mainichi.service.EventService
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
@@ -18,7 +21,8 @@ import org.springframework.web.server.ServerWebExchange
 class PostController(
     val postRepository: PostRepository,
     val shortPostRepository: ShortPostRepository,
-    val commentRepository: CommentRepository
+    val commentRepository: CommentRepository,
+    val eventService: EventService
 ) {
     /**
      * Request all post data
@@ -65,7 +69,19 @@ class PostController(
             return null
         }
 
-        return postRepository.save(Post(0, userSnowflake.toLong(), content))
+        val post = postRepository.save(Post(0, userSnowflake.toLong(), content))
+        eventService.emit(
+            PostCreateEvent(
+                ShortPost(
+                    post.snowflake,
+                    post.author,
+                    post.content,
+                    0,
+                    0
+                )
+            )
+        )
+        return post
     }
 
     /**
@@ -80,7 +96,7 @@ class PostController(
         exchange: ServerWebExchange,
         @PathVariable("snowflake")
         postSnowflake: Long,
-        ): Post? {
+    ): Post? {
         val post = postRepository.findById(postSnowflake.toString())
         val form = exchange.awaitFormData().toSingleValueMap().toMap()
         val content = form["content"]
@@ -90,7 +106,7 @@ class PostController(
             return null
         }
 
-        if (exchange.awaitSession().attributes["SNOWFLAKE"] as String != post.author.toString()){
+        if (exchange.awaitSession().attributes["SNOWFLAKE"] as String != post.author.toString()) {
             exchange.response.statusCode = HttpStatus.FORBIDDEN
             return null
         }

@@ -1,6 +1,5 @@
 package app.mainichi.controller
 
-import app.mainichi.event.Event
 import app.mainichi.event.LikeCreatedEvent
 import app.mainichi.event.LikeDeletedEvent
 import app.mainichi.repository.EditLikeRepository
@@ -48,12 +47,7 @@ class LikeController(
             )
         )
 
-        eventService.emit(
-            ServerSentEvent.builder<LikeCreatedEvent>()
-                .event("message")
-                .data(LikeCreatedEvent(like))
-                .build()
-        )
+        eventService.emit(LikeCreatedEvent(like))
 
         return like
     }
@@ -63,18 +57,15 @@ class LikeController(
         @PathVariable("snowflake")
         postSnowflake: Long,
         exchange: ServerWebExchange
-    ) {
+    ): Like {
         //retrieve the current user
         val userSnowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String
         val like = Like(postSnowflake, userSnowflake.toLong())
 
         editLikeRepository.delete(like)
-        eventService.emit(
-            ServerSentEvent.builder<LikeDeletedEvent>()
-                .event("message")
-                .data(LikeDeletedEvent(like))
-                .build()
-        )
+        eventService.emit(LikeDeletedEvent(like))
+
+        return like
     }
 
     @GetMapping("/users/{snowflake}/likes")

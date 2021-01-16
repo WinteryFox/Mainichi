@@ -9,9 +9,12 @@ import org.springframework.stereotype.Service
 @Service
 class EventService {
     private val flow = MutableSharedFlow<ServerSentEvent<*>>()
-    val events get() = flow.asSharedFlow()
+    val publisher get() = flow.asSharedFlow()
 
-    @Synchronized suspend fun <T : Event<*>> emit(event: ServerSentEvent<T>) {
-        flow.emit(event)
+    @Synchronized suspend fun <T : Event<*>> emit(payload: T) {
+        flow.emit(
+            ServerSentEvent.builder(payload)
+                .build()
+        )
     }
 }

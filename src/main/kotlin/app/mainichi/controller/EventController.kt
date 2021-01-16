@@ -15,5 +15,5 @@ class EventController(
         "/events",
         produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
     )
-    fun events(): SharedFlow<ServerSentEvent<*>> = service.events
+    fun events(): SharedFlow<ServerSentEvent<*>> = service.publisher
 }
