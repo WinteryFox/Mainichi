@@ -40,14 +40,14 @@ class UserController(
     val proficientRepository: ProficientRepository,
     val learningRepository: LearningRepository,
     val languageRepository: LanguageRepository,
-    val storage: Storage,
+    val storage: Storage
 ) {
-    @GetMapping("/users/{snowflakes}")
+    @GetMapping("/users/{ids}")
     suspend fun getUsers(
         exchange: ServerWebExchange,
         @PathVariable
-        snowflakes: Set<String>
-    ) = userRepository.findAllById(snowflakes)
+        ids: Set<String>
+    ) = userRepository.findAllById(ids)
         .map { PartialUser(it) }
 
     /**
@@ -57,10 +57,10 @@ class UserController(
     suspend fun getSelf(
         exchange: ServerWebExchange
     ): User {
-        val snowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String?
+        val id = exchange.awaitSession().attributes["id"] as String?
             ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
 
-        return userRepository.findById(snowflake)!!
+        return userRepository.findById(id)!!
     }
 
     /**
@@ -70,7 +70,7 @@ class UserController(
     suspend fun updateLanguages(
         exchange: ServerWebExchange
     ) {
-        val user = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
+        val user = userRepository.findById(exchange.awaitSession().attributes["id"] as String)!!
         val form = exchange.awaitFormData()
 
         val learning = form["learning"]
@@ -80,9 +80,9 @@ class UserController(
         if (learning == null || learning.size == 0 || proficient == null || proficient.size == 0)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST)
 
-        learningRepository.saveAll(learning.stream().map { Learning(user.snowflake, it, 1) }.toList())
+        learningRepository.saveAll(learning.stream().map { Learning(user.id, it, 1) }.toList())
             .collect() //TODO change proficiency
-        proficientRepository.saveAll(proficient.stream().map { Proficient(user.snowflake, it) }.toList()).collect()
+        proficientRepository.saveAll(proficient.stream().map { Proficient(user.id, it) }.toList()).collect()
     }
 
     /**
@@ -99,7 +99,7 @@ class UserController(
         update: UserUpdateRequest
     ): User {
         // Retrieve user and form data sent in
-        val user = userRepository.findById(exchange.awaitSession().attributes["SNOWFLAKE"] as String)!!
+        val user = userRepository.findById(exchange.awaitSession().attributes["id"] as String)!!
 
         if (update.username.isEmpty() ||
             update.username.length > 16
@@ -116,13 +116,14 @@ class UserController(
         try {
             return userRepository.save(
                 User(
-                    user.snowflake,
+                    user.id,
                     user.email,
                     update.username,
                     if (update.birthday != null) LocalDate.parse(update.birthday) else null,
                     update.gender,
                     update.summary,
-                    user.avatar
+                    user.avatar,
+                    user.version
                 )
             )
         } catch (exception: DateTimeParseException) {
@@ -163,9 +164,9 @@ class UserController(
         @RequestPart("avatar")
         part: FilePart
     ): User {
-        val snowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String?
+        val id = exchange.awaitSession().attributes["id"] as String?
             ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val user = userRepository.findById(snowflake)
+        val user = userRepository.findById(id)
             ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
 
         @Suppress("BlockingMethodInNonBlockingContext")
@@ -193,7 +194,7 @@ class UserController(
             // Save the image to the bucket and update the user's avatar in the database
             val updatedUser = userRepository.save(
                 User(
-                    user.snowflake,
+                    user.id,
                     user.email,
                     user.username,
                     user.birthday,
@@ -203,7 +204,8 @@ class UserController(
                         AVATARS_LOCATION,
                         file.readBytes(),
                         MediaType.IMAGE_PNG_VALUE
-                    ).name.substringAfter('/')
+                    ).name.substringAfter('/'),
+                    user.version
                 )
             )
 
@@ -217,15 +219,15 @@ class UserController(
         }
     }
 
-    @GetMapping("/users/{snowflake}/languages")
+    @GetMapping("/users/{id}/languages")
     suspend fun getUserLanguages(
-        @PathVariable("snowflake")
-        snowflake: String
+        @PathVariable("id")
+        id: String
     ): UserLanguages {
-        val proficient = proficientRepository.findAllById(setOf(snowflake))
+        val proficient = proficientRepository.findAllById(setOf(id))
             .map { it.language }
             .toSet()
-        val learning = learningRepository.findAllById(setOf(snowflake))
+        val learning = learningRepository.findAllById(setOf(id))
             .toSet()
 
         return UserLanguages(

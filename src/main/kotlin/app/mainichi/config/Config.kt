@@ -58,10 +58,10 @@ class Config(
                 "/avatars/{hash}.png",
                 "/posts",
                 "/languages",
-                "/users/{snowflake}/posts",
-                "/users/{snowflakes}",
-                "/users/{snowflake}/languages",
-                "/posts/{snowflake}"
+                "/users/{id}/posts",
+                "/users/{ids}",
+                "/users/{id}/languages",
+                "/posts/{id}"
             ).permitAll()
             .anyExchange().authenticated() // Any other requests must be authenticated
             .and()

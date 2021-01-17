@@ -22,28 +22,28 @@ class LikeController(
     val editLikeRepository: EditLikeRepository,
     val eventService: EventService
 ) {
-    @GetMapping("/posts/{snowflake}/likes")
+    @GetMapping("/posts/{id}/likes")
     suspend fun getLikes(
-        @PathVariable("snowflake")
-        snowflake: Long
+        @PathVariable("id")
+        id: Long
     ): Flow<Long> =
-        likeRepository.findAllByPost(snowflake)
+        likeRepository.findAllByPost(id)
             .map { it.liker }
 
-    @PostMapping("/posts/{snowflake}/likes")
+    @PostMapping("/posts/{id}/likes")
     suspend fun likePost(
-        @PathVariable("snowflake")
-        postSnowflake: Long,
+        @PathVariable("id")
+        postid: Long,
         exchange: ServerWebExchange
     ): Like {
         //retrieve the logged in user
-        val userSnowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String
+        val userid = exchange.awaitSession().attributes["id"] as String
 
         //like the post as the current user
         val like = editLikeRepository.save(
             Like(
-                postSnowflake,
-                userSnowflake.toLong()
+                postid,
+                userid.toLong()
             )
         )
 
@@ -52,15 +52,15 @@ class LikeController(
         return like
     }
 
-    @DeleteMapping("/posts/{snowflake}/likes")
+    @DeleteMapping("/posts/{id}/likes")
     suspend fun deleteLike(
-        @PathVariable("snowflake")
-        postSnowflake: Long,
+        @PathVariable("id")
+        postid: Long,
         exchange: ServerWebExchange
     ): Like {
         //retrieve the current user
-        val userSnowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String
-        val like = Like(postSnowflake, userSnowflake.toLong())
+        val userid = exchange.awaitSession().attributes["id"] as String
+        val like = Like(postid, userid.toLong())
 
         editLikeRepository.delete(like)
         eventService.emit(LikeDeletedEvent(like))
@@ -68,10 +68,10 @@ class LikeController(
         return like
     }
 
-    @GetMapping("/users/{snowflake}/likes")
+    @GetMapping("/users/{id}/likes")
     suspend fun getUserLikes(
-        @PathVariable("snowflake")
-        userSnowflake: Long
-    ): Flow<Long> = likeRepository.findAllByLiker(userSnowflake)
+        @PathVariable("id")
+        userid: Long
+    ): Flow<Long> = likeRepository.findAllByLiker(userid)
         .map { it.post }
 }

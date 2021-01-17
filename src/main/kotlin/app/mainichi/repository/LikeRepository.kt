@@ -8,8 +8,8 @@ import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 
 interface LikeRepository : CoroutineCrudRepository<Like, String> {
     @Query
-    suspend fun findAllByLiker(snowflake: Long): Flow<Like>
+    suspend fun findAllByLiker(id: Long): Flow<Like>
 
     @Query
-    suspend fun findAllByPost(snowflake: Long): Flow<Like>
+    suspend fun findAllByPost(id: Long): Flow<Like>
 }

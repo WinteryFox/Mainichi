@@ -24,7 +24,7 @@ class R2dbcWebSession(
     private val sessionData = AtomicReference(session to started)
     private val session get() = sessionData.get().first
 
-    var snowflake: Long? = null
+    var id: Long? = null
 
     override fun getId(): String = session.id.toString()
 

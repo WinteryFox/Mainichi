@@ -19,9 +19,9 @@ class ShortPostRepository(
                    count(l.*) like_count,
                    count(c.*) comment_count
             FROM posts p
-                     LEFT JOIN likes l ON p.snowflake = l.post
-                     LEFT JOIN comments c ON p.snowflake = c.post
-            GROUP BY p.snowflake
+                     LEFT JOIN likes l ON p.id = l.post
+                     LEFT JOIN comments c ON p.id = c.post
+            GROUP BY p.id
         """.trimIndent())
             .map { row, metadata -> converter.read(ShortPost::class.java, row, metadata) }
             .all()
@@ -32,27 +32,27 @@ class ShortPostRepository(
                    count(l.*) like_count,
                    count(c.*) comment_count
             FROM posts p
-                     LEFT JOIN likes l ON p.snowflake = l.post
-                     LEFT JOIN comments c ON p.snowflake = c.post
+                     LEFT JOIN likes l ON p.id = l.post
+                     LEFT JOIN comments c ON p.id = c.post
             WHERE p.author = :author
-            GROUP BY p.snowflake
+            GROUP BY p.id
         """.trimIndent())
             .bind("author", author)
             .map { row, metadata -> converter.read(ShortPost::class.java, row, metadata) }
             .all()
 
-    suspend fun findBySnowflake(snowflake: Long): ShortPost? =
+    suspend fun findByid(id: Long): ShortPost? =
         client.sql("""
             SELECT p.*,
                    count(l.*) like_count,
                    count(c.*) comment_count
             FROM posts p
-                     LEFT JOIN likes l ON p.snowflake = l.post
-                     LEFT JOIN comments c ON p.snowflake = c.post
-            WHERE p.snowflake = :snowflake
-            GROUP BY p.snowflake
+                     LEFT JOIN likes l ON p.id = l.post
+                     LEFT JOIN comments c ON p.id = c.post
+            WHERE p.id = :id
+            GROUP BY p.id
         """.trimIndent())
-            .bind("snowflake", snowflake)
+            .bind("id", id)
             .map { row, metadata -> converter.read(ShortPost::class.java, row, metadata) }
             .awaitSingleOrNull()
 }

@@ -7,6 +7,7 @@ import app.mainichi.repository.PostRepository
 import app.mainichi.table.Post
 import app.mainichi.repository.ShortPostRepository
 import app.mainichi.service.EventService
+import app.mainichi.service.SnowflakeService
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
@@ -22,7 +23,8 @@ class PostController(
     val postRepository: PostRepository,
     val shortPostRepository: ShortPostRepository,
     val commentRepository: CommentRepository,
-    val eventService: EventService
+    val eventService: EventService,
+    val snowflakeService: SnowflakeService
 ) {
     /**
      * Request all post data
@@ -30,26 +32,26 @@ class PostController(
     @GetMapping("/posts")
     fun getAllPosts() = shortPostRepository.findAll()
 
-    @GetMapping("/posts/{snowflake}")
+    @GetMapping("/posts/{id}")
     suspend fun getPost(
         @PathVariable
-        snowflake: Long
-    ) = shortPostRepository.findBySnowflake(snowflake)
+        id: Long
+    ) = shortPostRepository.findByid(id)
 
-    @GetMapping("/posts/{snowflake}/comments")
+    @GetMapping("/posts/{id}/comments")
     suspend fun getPostComments(
         @PathVariable
-        snowflake: Long
-    ) = commentRepository.findAllByPost(snowflake)
+        id: Long
+    ) = commentRepository.findAllByPost(id)
 
     /**
      * Request all post data from a specific user
      */
-    @GetMapping("/users/{snowflake}/posts")
+    @GetMapping("/users/{id}/posts")
     fun getPostsFromUser(
-        @PathVariable("snowflake")
-        userSnowflake: Long
-    ) = shortPostRepository.findAllByAuthor(userSnowflake)
+        @PathVariable("id")
+        userid: Long
+    ) = shortPostRepository.findAllByAuthor(userid)
 
     /**
      * Creates a post and attaches it to the current logged in user
@@ -62,22 +64,30 @@ class PostController(
     suspend fun createPost(
         exchange: ServerWebExchange
     ): Post? {
-        val userSnowflake = exchange.awaitSession().attributes["SNOWFLAKE"] as String
+        val userid = exchange.awaitSession().attributes["id"] as String
         val content = exchange.awaitFormData().toSingleValueMap().toMap()["content"]
         if (content == null || content.length >= 1024 || content.isEmpty()) {
             exchange.response.statusCode = HttpStatus.BAD_REQUEST
             return null
         }
 
-        val post = postRepository.save(Post(0, userSnowflake.toLong(), content))
+        val post = postRepository.save(
+            Post(
+                snowflakeService.next(),
+                userid.toLong(),
+                content,
+                0
+            )
+        )
         eventService.emit(
             PostCreateEvent(
                 ShortPost(
-                    post.snowflake,
+                    post.id,
                     post.author,
                     post.content,
                     0,
-                    0
+                    0,
+                    post.version
                 )
             )
         )
@@ -88,16 +98,16 @@ class PostController(
      * Updates selected post
      */
     @PostMapping(
-        "/posts/{snowflake}",
+        "/posts/{id}",
         consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     suspend fun updatePost(
         exchange: ServerWebExchange,
-        @PathVariable("snowflake")
-        postSnowflake: Long,
+        @PathVariable("id")
+        id: Long,
     ): Post? {
-        val post = postRepository.findById(postSnowflake.toString())
+        val post = postRepository.findById(id.toString())
         val form = exchange.awaitFormData().toSingleValueMap().toMap()
         val content = form["content"]
 
@@ -106,16 +116,17 @@ class PostController(
             return null
         }
 
-        if (exchange.awaitSession().attributes["SNOWFLAKE"] as String != post.author.toString()) {
+        if (exchange.awaitSession().attributes["id"] as String != post.author.toString()) {
             exchange.response.statusCode = HttpStatus.FORBIDDEN
             return null
         }
 
         return postRepository.save(
             Post(
-                post.snowflake,
+                post.id,
                 post.author,
-                content
+                content,
+                post.version
             )
         )
     }

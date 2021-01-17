@@ -7,5 +7,5 @@ import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 
 interface ProficientRepository : CoroutineCrudRepository<Proficient, String>{
     @Query
-    suspend fun findAllBySnowflake(snowflake: Long): Flow<Proficient>
+    suspend fun findAllByid(id: Long): Flow<Proficient>
 }

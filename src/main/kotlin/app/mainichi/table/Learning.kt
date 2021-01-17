@@ -8,7 +8,7 @@ import org.springframework.data.relational.core.mapping.Table
 data class Learning(
     @Id
     @JsonIgnore
-    val snowflake: Long,
+    val id: Long,
     val language: String,
     val proficiency: Short
 )

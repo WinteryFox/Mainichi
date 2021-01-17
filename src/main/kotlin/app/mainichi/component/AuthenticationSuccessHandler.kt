@@ -2,6 +2,7 @@ package app.mainichi.component
 
 import app.mainichi.table.User
 import app.mainichi.repository.UserRepository
+import app.mainichi.service.SnowflakeService
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.mono
 import org.springframework.security.core.Authentication
@@ -19,6 +20,7 @@ import java.net.URI
  */
 @Component
 class AuthenticationSuccessHandler(
+    val snowflakeService: SnowflakeService,
     val userRepository: UserRepository
 ) : ServerAuthenticationSuccessHandler {
     val redirect = DefaultServerRedirectStrategy()
@@ -38,23 +40,24 @@ class AuthenticationSuccessHandler(
 
             if (user != null) {
                 // If such a user is found, put their ID in the session (so we know who this user is later)
-                session.attributes.putIfAbsent("SNOWFLAKE", user.snowflake.toString())
+                session.attributes.putIfAbsent("id", user.id.toString())
             } else {
                 // If such a user does not exist, create an account using that email, and then put
-                // the newly created snowflake in the session
+                // the newly created id in the session
                 session.attributes.putIfAbsent(
-                    "SNOWFLAKE",
+                    "id",
                     userRepository.save(
                         User(
-                            0,
+                            snowflakeService.next(),
                             oAuth2User.attributes["email"] as String,
                             oAuth2User.attributes["name"] as String,
                             null,
                             null,
                             null,
-                            null
+                            null,
+                            0
                         )
-                    ).snowflake.toString()
+                    ).id.toString()
                 )
             }
 

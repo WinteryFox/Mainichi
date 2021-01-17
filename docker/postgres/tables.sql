@@ -1,58 +1,59 @@
-CREATE EXTENSION snowflake;
-
 CREATE TABLE users
 (
-    snowflake BIGINT PRIMARY KEY DEFAULT next_snowflake(0, TIMESTAMP '2020-01-01 00:00:00'), -- The ID of the user
-    email     TEXT NOT NULL,                                                                 -- The user's email
-    username  TEXT NOT NULL,                                                                 -- The username of the user
-    gender    CHAR               DEFAULT NULL,                                               -- The gender of the user (female, male, unknown)
-    birthday  DATE               DEFAULT NULL,                                               -- The user's birthday
-    summary   TEXT               DEFAULT NULL,                                               -- The summary/description/self-introduction of the user
-    avatar    TEXT               DEFAULT NULL,                                               -- The user's avatar hash
+    id       BIGINT PRIMARY KEY,           -- The ID of the user
+    email    TEXT   NOT NULL,              -- The user's email
+    username TEXT   NOT NULL,              -- The username of the user
+    gender   CHAR            DEFAULT NULL, -- The gender of the user (female, male, unknown)
+    birthday DATE            DEFAULT NULL, -- The user's birthday
+    summary  TEXT            DEFAULT NULL, -- The summary/description/self-introduction of the user
+    avatar   TEXT            DEFAULT NULL, -- The user's avatar hash
+    version  BIGINT NOT NULL DEFAULT 0,
     CHECK (gender IN ('F', 'M'))
 );
 
 CREATE TABLE learning
 (
-    snowflake   BIGINT REFERENCES users (snowflake),
+    id          BIGINT REFERENCES users (id),
     language    VARCHAR(2) REFERENCES languages (code),
     proficiency SMALLINT NOT NULL,
-    PRIMARY KEY (snowflake, language)
+    PRIMARY KEY (id, language)
 );
 
 CREATE TABLE proficient
 (
-    snowflake BIGINT REFERENCES users (snowflake),
-    language  VARCHAR(5) REFERENCES languages (code),
-    PRIMARY KEY (snowflake, language)
+    id       BIGINT REFERENCES users (id),
+    language VARCHAR(5) REFERENCES languages (code),
+    PRIMARY KEY (id, language)
 );
 
 CREATE TABLE posts
 (
-    snowflake BIGINT PRIMARY KEY DEFAULT next_snowflake(0, TIMESTAMP '2020-01-01 00:00:00'), -- The ID of the post
-    author    BIGINT REFERENCES users (snowflake),                                           -- The author of the post
-    content   TEXT NOT NULL                                                                  -- The content of the post
+    id      BIGINT PRIMARY KEY,           -- The ID of the post
+    author  BIGINT REFERENCES users (id), -- The author of the post
+    content TEXT   NOT NULL,              -- The content of the post
+    version BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE likes
 (
-    post  BIGINT REFERENCES posts (snowflake), -- The post liked
-    liker BIGINT REFERENCES users (snowflake), -- The user who liked the post
+    post  BIGINT REFERENCES posts (id), -- The post liked
+    liker BIGINT REFERENCES users (id), -- The user who liked the post
     PRIMARY KEY (post, liker)
 );
 
 CREATE TABLE comments
 (
-    snowflake BIGINT PRIMARY KEY DEFAULT next_snowflake(0, TIMESTAMP '2020-01-01 00:00:00'), -- The comment's ID
-    post      BIGINT REFERENCES posts (snowflake),                                           -- The post the comment is on
-    commenter BIGINT REFERENCES users (snowflake),                                           -- User the comment is from
-    content   TEXT NOT NULL                                                                  -- The content of the comment
+    id        BIGINT PRIMARY KEY,           -- The comment's ID
+    post      BIGINT REFERENCES posts (id), -- The post the comment is on
+    commenter BIGINT REFERENCES users (id), -- User the comment is from
+    content   TEXT   NOT NULL,              -- The content of the comment
+    version   BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE follows
 (
-    follower BIGINT REFERENCES users (snowflake), -- The person following
-    followee BIGINT REFERENCES users (snowflake)  -- The person being followed
+    follower BIGINT REFERENCES users (id), -- The person following
+    followee BIGINT REFERENCES users (id)  -- The person being followed
 );
 
 CREATE TABLE sessions

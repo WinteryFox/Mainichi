@@ -8,6 +8,6 @@ import org.springframework.data.relational.core.mapping.Table
 data class Proficient(
     @Id
     @JsonIgnore
-    val snowflake: Long,
+    val id: Long,
     val language: String
 )
