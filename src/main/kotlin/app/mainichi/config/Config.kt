@@ -2,9 +2,11 @@ package app.mainichi.config
 
 import app.mainichi.component.AuthenticationSuccessHandler
 import app.mainichi.component.LogoutSuccessHandler
+import app.mainichi.component.LongSerializer
 import app.mainichi.component.OAuth2AuthorizationRequestResolver
 import app.mainichi.data.Storage
 import app.mainichi.session.AttributeService
+import com.fasterxml.jackson.databind.module.SimpleModule
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.web.codec.CodecCustomizer
 import org.springframework.context.annotation.Bean
@@ -82,4 +84,11 @@ class Config(
 
     @Bean
     fun attributeService() = AttributeService()
+
+    @Bean
+    fun longSerializerModule(
+        serializer: LongSerializer
+    ): SimpleModule =
+        SimpleModule()
+            .addSerializer(serializer)
 }
