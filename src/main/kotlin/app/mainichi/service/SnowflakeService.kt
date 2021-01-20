@@ -6,6 +6,7 @@ import java.lang.IllegalStateException
 import java.lang.StringBuilder
 import java.net.NetworkInterface
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicLong
 
 private const val UNUSED_BITS = 1
 private const val EPOCH_BITS = 41
@@ -20,8 +21,8 @@ class SnowflakeService(
     private val start: Long = Instant.parse("2021-01-01T00:00:00.00Z").toEpochMilli(),
     private val nodeId: Long = generateNodeId()
 ) {
-    private var sequence = 0L
-    private var last = timestamp()
+    private var sequence = AtomicLong(0L)
+    private var last = AtomicLong(timestamp())
 
     init {
         if (start < 0)
@@ -30,27 +31,26 @@ class SnowflakeService(
             throw IllegalArgumentException("Start time may not be in the future")
     }
 
-    @Synchronized
     fun next(): Long {
         var now = timestamp()
 
-        if (now < last)
+        if (now < last.get())
             throw IllegalStateException("The time moved backwards!")
 
-        if (now == last)
-            sequence = (sequence + 1) and MAX_SEQUENCE
-            if (sequence == 0L)
-                while (now == last)
+        if (now == last.get())
+            sequence.set((sequence.incrementAndGet() + 1) and MAX_SEQUENCE)
+            if (sequence.get() == 0L)
+                while (now == last.get())
                     now = timestamp()
         else
-            sequence = 0
+            sequence.set(0)
 
-        last = now
+        last.set(now)
 
         return now shl
                 (NODE_BITS + SEQUENCE_BITS) or
                 (nodeId shl SEQUENCE_BITS) or
-                sequence
+                sequence.get()
     }
 
     private fun timestamp() = Instant.now().toEpochMilli() - start
