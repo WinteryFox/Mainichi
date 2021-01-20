@@ -38,11 +38,6 @@ class PostController(
         id: Long
     ) = shortPostRepository.findByid(id)
 
-    @GetMapping("/posts/{id}/comments")
-    suspend fun getPostComments(
-        @PathVariable
-        id: Long
-    ) = commentRepository.findAllByPost(id)
 
     /**
      * Request all post data from a specific user

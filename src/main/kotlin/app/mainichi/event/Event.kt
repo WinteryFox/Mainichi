@@ -7,6 +7,8 @@ abstract class Event<T>(
     enum class Type {
         POST_CREATED,
         LIKE_CREATED,
-        LIKE_DELETED;
+        LIKE_DELETED,
+        COMMENT_CREATED,
+        COMMENT_DELETED;
     }
 }
