@@ -1,6 +1,7 @@
 package app.mainichi.controller
 
 import app.mainichi.*
+import app.mainichi.`object`.UserLanguagesUpdateRequest
 import app.mainichi.`object`.UserUpdateRequest
 import app.mainichi.component.ResponseStatusCodeException
 import app.mainichi.data.Storage
@@ -18,11 +19,14 @@ import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.codec.multipart.FilePart
+import org.springframework.r2dbc.core.DatabaseClient
+import org.springframework.r2dbc.core.await
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.reactive.server.awaitFormData
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
+import reactor.core.publisher.Mono
 import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
@@ -40,6 +44,7 @@ class UserController(
     val proficientRepository: ProficientRepository,
     val learningRepository: LearningRepository,
     val languageRepository: LanguageRepository,
+    val client: DatabaseClient,
     val storage: Storage
 ) {
     @GetMapping("/users/{ids}")
@@ -66,23 +71,28 @@ class UserController(
     /**
      * Updates the proficient and the learning languages of the user
      */
-    @PostMapping("/users/@me/languages", consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE])
+    @PostMapping("/users/@me/languages")
     suspend fun updateLanguages(
-        exchange: ServerWebExchange
+        exchange: ServerWebExchange,
+        @RequestBody
+        request: UserLanguagesUpdateRequest
     ) {
         val user = userRepository.findById(exchange.awaitSession().attributes["id"] as String)!!
-        val form = exchange.awaitFormData()
 
-        val learning = form["learning"]
-        val proficient = form["proficient"]
+        learningRepository.deleteById(user.id.toString())
+        proficientRepository.deleteById(user.id.toString())
 
-        //check if keys are present, if not return
-        if (learning == null || learning.size == 0 || proficient == null || proficient.size == 0)
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST)
+        for (p in request.proficient)
+            client.sql("INSERT INTO proficient (id, language) VALUES ($1, $2)")
+                .bind(0, user.id)
+                .bind(1, p)
+                .await()
 
-        learningRepository.saveAll(learning.stream().map { Learning(user.id, it, 1) }.toList())
-            .collect() //TODO change proficiency
-        proficientRepository.saveAll(proficient.stream().map { Proficient(user.id, it) }.toList()).collect()
+        for (l in request.learning)
+            client.sql("INSERT INTO learning (id, language, proficiency) VALUES ($1, $2, 1)")
+                .bind(0, user.id)
+                .bind(1, l)
+                .await()
     }
 
     /**

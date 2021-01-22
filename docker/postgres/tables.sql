@@ -22,7 +22,7 @@ CREATE TABLE learning
 CREATE TABLE proficient
 (
     id       BIGINT REFERENCES users (id),
-    language VARCHAR(5) REFERENCES languages (code),
+    language VARCHAR(2) REFERENCES languages (code),
     PRIMARY KEY (id, language)
 );
 

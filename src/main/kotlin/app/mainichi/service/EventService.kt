@@ -11,7 +11,8 @@ class EventService {
     private val flow = MutableSharedFlow<ServerSentEvent<*>>()
     val publisher get() = flow.asSharedFlow()
 
-    @Synchronized suspend fun <T : Event<*>> emit(payload: T) {
+    @Synchronized
+    suspend fun <T : Event<*>> emit(payload: T) {
         flow.emit(
             ServerSentEvent.builder(payload)
                 .build()
