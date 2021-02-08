@@ -1,8 +1,9 @@
 package app.mainichi.controller
 
 import app.mainichi.*
-import app.mainichi.`object`.UserLanguagesUpdateRequest
-import app.mainichi.`object`.UserUpdateRequest
+import app.mainichi.request.AvatarUploadRequest
+import app.mainichi.request.UserLanguagesUpdateRequest
+import app.mainichi.request.UserUpdateRequest
 import app.mainichi.component.ResponseStatusCodeException
 import app.mainichi.data.Storage
 import app.mainichi.data.toBuffer
@@ -12,28 +13,26 @@ import com.google.cloud.storage.Blob
 import com.google.cloud.storage.StorageException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.reactive.awaitSingleOrNull
+import org.apache.tika.parser.utils.DataURISchemeUtil
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.http.codec.multipart.FilePart
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.await
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.reactive.server.awaitFormData
 import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
-import reactor.core.publisher.Mono
+import java.io.FileOutputStream
 import java.nio.file.Files
+import java.security.Principal
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import javax.imageio.ImageIO
-import kotlin.streams.toList
 
 /**
  * REST controller for user data
@@ -49,7 +48,6 @@ class UserController(
 ) {
     @GetMapping("/users/{ids}")
     suspend fun getUsers(
-        exchange: ServerWebExchange,
         @PathVariable
         ids: Set<String>
     ) = userRepository.findAllById(ids)
@@ -60,24 +58,20 @@ class UserController(
      */
     @GetMapping("/users/@me", produces = [MediaType.APPLICATION_JSON_VALUE])
     suspend fun getSelf(
-        exchange: ServerWebExchange
-    ): User {
-        val id = exchange.awaitSession().attributes["id"] as String?
-            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-
-        return userRepository.findById(id)!!
-    }
+        principal: Principal
+    ): User =
+        userRepository.findById(principal.name)!!
 
     /**
      * Updates the proficient and the learning languages of the user
      */
     @PostMapping("/users/@me/languages")
     suspend fun updateLanguages(
-        exchange: ServerWebExchange,
+        principal: Principal,
         @RequestBody
         request: UserLanguagesUpdateRequest
     ) {
-        val user = userRepository.findById(exchange.awaitSession().attributes["id"] as String)!!
+        val user = userRepository.findById(principal.name)!!
 
         learningRepository.deleteById(user.id.toString())
         proficientRepository.deleteById(user.id.toString())
@@ -112,14 +106,14 @@ class UserController(
         val user = userRepository.findById(exchange.awaitSession().attributes["id"] as String)!!
 
         if (update.username.isEmpty() ||
-            update.username.length > 16
+            update.username.length > MAX_USERNAME_LENGTH
         )
             throw ResponseStatusCodeException(ErrorCode.INVALID_USERNAME)
 
         if (update.gender != null && !setOf('F', 'M', null).contains(update.gender))
             throw ResponseStatusCodeException(ErrorCode.INVALID_GENDER)
 
-        if (update.summary != null && (update.summary.isEmpty() || update.summary.length > 2048))
+        if (update.summary != null && (update.summary.isEmpty() || update.summary.length > MAX_SUMMARY_LENGTH))
             throw ResponseStatusCodeException(ErrorCode.INVALID_SUMMARY)
 
         // Update the user's data in the database with the form data
@@ -133,6 +127,7 @@ class UserController(
                     update.gender,
                     update.summary,
                     user.avatar,
+                    user.password,
                     user.version
                 )
             )
@@ -166,25 +161,36 @@ class UserController(
      */
     @PatchMapping(
         "/users/@me",
-        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE],
+        consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     suspend fun updateAvatar(
         exchange: ServerWebExchange,
-        @RequestPart("avatar")
-        part: FilePart
+        @RequestBody
+        request: AvatarUploadRequest
     ): User {
         val id = exchange.awaitSession().attributes["id"] as String?
             ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
         val user = userRepository.findById(id)
             ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
 
-        @Suppress("BlockingMethodInNonBlockingContext")
-        val path = withContext(Dispatchers.IO) { Files.createTempFile(null, null) }
-        val file = path.toFile()
-        try {
-            part.transferTo(file).awaitSingleOrNull()
+        val dataUri = DataURISchemeUtil().parse(request.avatar)
+        if (!dataUri.isBase64 || dataUri.mediaType != org.apache.tika.mime.MediaType.image("png"))
+            throw ResponseStatusCodeException(ErrorCode.INVALID_AVATAR)
 
+        @Suppress("BlockingMethodInNonBlockingContext")
+        val path = withContext(Dispatchers.IO) {
+            val temp = Files.createTempFile(null, null)
+
+            dataUri.inputStream.use {
+                FileOutputStream(temp.toFile()).write(it.readBytes())
+            }
+
+            return@withContext temp
+        }
+        val file = path.toFile()
+
+        try {
             if (file.length() > MAX_AVATAR_SIZE)
                 throw ResponseStatusCodeException(ErrorCode.INVALID_AVATAR)
 
@@ -215,6 +221,7 @@ class UserController(
                         file.readBytes(),
                         MediaType.IMAGE_PNG_VALUE
                     ).name.substringAfter('/'),
+                    user.password,
                     user.version
                 )
             )

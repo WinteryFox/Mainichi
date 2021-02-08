@@ -1,4 +1,4 @@
-package app.mainichi.`object`
+package app.mainichi.request
 
 data class UserUpdateRequest(
     val username: String,

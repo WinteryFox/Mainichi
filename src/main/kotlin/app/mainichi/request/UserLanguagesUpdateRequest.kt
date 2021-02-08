@@ -1,4 +1,4 @@
-package app.mainichi.`object`
+package app.mainichi.request
 
 data class UserLanguagesUpdateRequest(
     val learning: Set<String>,

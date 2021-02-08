@@ -1,5 +1,6 @@
 package app.mainichi.table
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Version
 import org.springframework.data.relational.core.mapping.Table
@@ -15,6 +16,8 @@ data class User(
     val gender: Char?,
     val summary: String?,
     val avatar: String?,
+    @JsonIgnore
+    val password: String,
     @Version
     val version: Long
 )

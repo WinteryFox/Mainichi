@@ -1,7 +1,10 @@
+CREATE EXTENSION pgcrypto;
+
 CREATE TABLE users
 (
     id       BIGINT PRIMARY KEY,           -- The ID of the user
     email    TEXT   NOT NULL,              -- The user's email
+    password TEXT   NOT NULL,
     username TEXT   NOT NULL,              -- The username of the user
     gender   CHAR            DEFAULT NULL, -- The gender of the user (female, male, unknown)
     birthday DATE            DEFAULT NULL, -- The user's birthday

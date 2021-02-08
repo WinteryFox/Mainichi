@@ -1,40 +1,31 @@
 package app.mainichi.config
 
-import app.mainichi.component.AuthenticationSuccessHandler
-import app.mainichi.component.LogoutSuccessHandler
+import app.mainichi.component.JwtAuthenticationConverter
+import app.mainichi.component.JwtAuthenticationManager
 import app.mainichi.component.LongSerializer
-import app.mainichi.component.OAuth2AuthorizationRequestResolver
-import app.mainichi.data.Storage
-import app.mainichi.session.AttributeService
 import com.fasterxml.jackson.databind.module.SimpleModule
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.web.codec.CodecCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.authentication.AuthenticationWebFilter
+import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers
 import org.springframework.web.cors.CorsConfiguration
 
-/**
- * Configures Spring Security, so that certain pages and actions
- * can only be performed by authorized (logged in) users (e.g. requesting
- * user data or requesting database updates).
- */
 @Configuration
 @EnableWebFluxSecurity
-class Config(
-    private val authorizationRequestResolver: OAuth2AuthorizationRequestResolver,
-    private val authenticationSuccessHandler: AuthenticationSuccessHandler,
-    private val logoutSuccessHandler: LogoutSuccessHandler
-) {
-    /**
-     * Configures REST endpoints security
-     */
+class Config {
     @Bean
     fun securityFilterChain(
         httpSecurity: ServerHttpSecurity,
+        authenticationManager: JwtAuthenticationManager,
+        authenticationConverter: JwtAuthenticationConverter,
         @Value("\${debug}")
         debug: Boolean
     ): SecurityWebFilterChain {
@@ -51,39 +42,33 @@ class Config(
                         }
                 }
 
+        val authenticationFilter = AuthenticationWebFilter(authenticationManager)
+        authenticationFilter.setServerAuthenticationConverter(authenticationConverter)
+        authenticationFilter.setSecurityContextRepository(NoOpServerSecurityContextRepository.getInstance())
+        authenticationFilter.setRequiresAuthenticationMatcher { exchange ->
+            ServerWebExchangeMatchers.pathMatchers(
+                HttpMethod.POST,
+                "/login",
+                "/register"
+            )
+                .matches(exchange)
+                .flatMap {
+                    if (it.isMatch)
+                        ServerWebExchangeMatcher.MatchResult.notMatch()
+                    else
+                        ServerWebExchangeMatcher.MatchResult.match()
+                }
+        }
+
         return httpSecurity
-            .csrf()
-            .disable()
-            .authorizeExchange()
-            .pathMatchers(
-                HttpMethod.GET,
-                "/avatars/{hash}.png",
-                "/posts",
-                "/languages",
-                "/users/{id}/posts",
-                "/users/{ids}",
-                "/users/{id}/languages",
-                "/posts/{id}"
-            ).permitAll()
-            .anyExchange().authenticated() // Any other requests must be authenticated
-            .and()
+            .addFilterAt(authenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+            .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
             .httpBasic().disable()
             .formLogin().disable()
-            .oauth2Login()
-            .authorizationRequestResolver(authorizationRequestResolver)
-            .authenticationSuccessHandler(authenticationSuccessHandler)
-            .and()
-            .logout()
-            .logoutSuccessHandler(logoutSuccessHandler)
-            .and()
+            .logout().disable()
+            .csrf().disable()
             .build()
     }
-
-    @Bean
-    fun bucket(): Storage = Storage()
-
-    @Bean
-    fun attributeService() = AttributeService()
 
     @Bean
     fun longSerializerModule(

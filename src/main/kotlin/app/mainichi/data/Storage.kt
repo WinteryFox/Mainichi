@@ -1,18 +1,19 @@
 package app.mainichi.data
 
 import app.mainichi.BUCKET_NAME
-import app.mainichi.PROJECT_NAME
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.storage.Blob
 import com.google.cloud.storage.StorageOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.springframework.stereotype.Component
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.*
 import javax.xml.bind.DatatypeConverter
 
 @Suppress("BlockingMethodInNonBlockingContext")
+@Component
 class Storage {
     private val options = StorageOptions
         .newBuilder()

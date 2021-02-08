@@ -5,8 +5,6 @@ server:
   forward-headers-strategy: native
 
 spring:
-  codec.max-in-memory-size: "2MB"
-
   webflux:
     base-path: "/api"
 
@@ -16,12 +14,4 @@ spring:
     password: ${POSTGRES_PASSWORD}
     url: "r2dbc:postgres://${POSTGRES_HOST}"
 
-  rsocket:
-    server:
-      mapping-path: "/gateway"
-      transport: websocket
-
-  security.oauth2.client.registration:
-    google:
-      client-id: "${GOOGLE_CLIENT_ID}"
-      client-secret: "${GOOGLE_CLIENT_SECRET}"
+google.recaptcha.secret: ${GOOGLE_RECAPTCHA_SECRET}

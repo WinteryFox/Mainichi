@@ -1,6 +1,6 @@
 package app.mainichi.controller
 
-import app.mainichi.`object`.CommentCreateRequest
+import app.mainichi.request.CommentCreateRequest
 import app.mainichi.event.CommentCreatedEvent
 import app.mainichi.repository.CommentRepository
 import app.mainichi.service.EventService
