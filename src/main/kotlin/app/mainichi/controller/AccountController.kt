@@ -27,16 +27,41 @@ import java.time.Instant
 
 @RestController
 class AccountController(
+    @Suppress("SpringJavaInjectionPointsAutowiringInspection")
+    @Value("\${google.recaptcha.secret}")
+    private val secret: String,
     private val jwtService: JwtService,
     private val snowflakeService: SnowflakeService,
     private val userRepository: UserRepository,
     private val client: DatabaseClient
 ) {
+    private val rest = RestTemplate()
+
     @PostMapping("/register")
     suspend fun createAccount(
         @RequestBody
         request: AccountCreateRequest
     ): LoginSuccessResponse {
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
+
+        val map = LinkedMultiValueMap<String, String>()
+        map.add("secret", secret)
+        map.add("response", request.captcha)
+
+        val captchaVerify = rest.postForEntity(
+            "https://www.google.com/recaptcha/api/siteverify",
+            HttpEntity<MultiValueMap<String, String>>(
+                map,
+                headers
+            ),
+            ReCaptchaTokenResponse::class.java
+        )
+
+        val captchaBody = captchaVerify.body
+        if (captchaVerify.statusCode != HttpStatus.OK || captchaBody == null || !captchaBody.success)
+            throw ResponseStatusCodeException(ErrorCode.FAILED_CAPTCHA)
+
         if (userRepository.findByEmail(request.email) != null)
             throw ResponseStatusCodeException(ErrorCode.USER_EXISTS)
 
