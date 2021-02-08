@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.*
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingle
+import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.r2dbc.core.bind
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
@@ -98,10 +99,10 @@ RETURNING *
     ): LoginSuccessResponse {
         val id = client.sql(
             """
-SELECT (password = crypt($2, password)) AS matches, id AS id
-FROM users
-WHERE email = $1 
-            """
+    SELECT (password = crypt($2, password)) AS matches, id AS id
+    FROM users
+    WHERE email = $1 
+                """
         )
             .bind(0, request.email)
             .bind(1, request.password)
@@ -111,7 +112,7 @@ WHERE email = $1
 
                 row["id"] as Long
             }
-            .awaitSingle()
+            .awaitSingleOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
 
         return LoginSuccessResponse(
             jwtService.createToken(id, Instant.now().plus(Duration.ofDays(30))) // TODO: Maybe use a refresh token?

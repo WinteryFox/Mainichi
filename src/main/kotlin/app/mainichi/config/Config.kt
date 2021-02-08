@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder
 import org.springframework.security.config.web.server.ServerHttpSecurity
@@ -17,6 +18,7 @@ import org.springframework.security.web.server.context.NoOpServerSecurityContext
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers
 import org.springframework.web.cors.CorsConfiguration
+import reactor.core.publisher.Mono
 
 @Configuration
 @EnableWebFluxSecurity
@@ -58,6 +60,10 @@ class Config {
                     else
                         ServerWebExchangeMatcher.MatchResult.match()
                 }
+        }
+        authenticationFilter.setAuthenticationFailureHandler { filterExchange, _ ->
+            filterExchange.exchange.response.statusCode = HttpStatus.UNAUTHORIZED
+            return@setAuthenticationFailureHandler Mono.empty<Void>()
         }
 
         return httpSecurity
