@@ -8,10 +8,10 @@ import app.mainichi.repository.LikeRepository
 import app.mainichi.service.EventService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import org.springframework.http.codec.ServerSentEvent
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.reactive.server.awaitSession
-import org.springframework.web.server.ServerWebExchange
+import org.springframework.web.server.ResponseStatusException
+import java.security.Principal
 
 /**
  * REST controller for like data
@@ -32,21 +32,16 @@ class LikeController(
 
     @PostMapping("/posts/{id}/likes")
     suspend fun likePost(
+        principal: Principal,
         @PathVariable("id")
-        postid: Long,
-        exchange: ServerWebExchange
+        id: Long
     ): Like {
-        //retrieve the logged in user
-        val userid = exchange.awaitSession().attributes["id"] as String
-
-        //like the post as the current user
         val like = editLikeRepository.save(
             Like(
-                postid,
-                userid.toLong()
+                id,
+                principal.name.toLong()
             )
         )
-
         eventService.emit(LikeCreatedEvent(like))
 
         return like
@@ -54,13 +49,11 @@ class LikeController(
 
     @DeleteMapping("/posts/{id}/likes")
     suspend fun deleteLike(
+        principal: Principal,
         @PathVariable("id")
-        postid: Long,
-        exchange: ServerWebExchange
+        id: Long
     ): Like {
-        //retrieve the current user
-        val userid = exchange.awaitSession().attributes["id"] as String
-        val like = Like(postid, userid.toLong())
+        val like = likeRepository.findByPostAndLiker(id, principal.name.toLong()) ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
 
         editLikeRepository.delete(like)
         eventService.emit(LikeDeletedEvent(like))

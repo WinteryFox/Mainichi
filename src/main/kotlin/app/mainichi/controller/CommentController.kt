@@ -1,5 +1,7 @@
 package app.mainichi.controller
 
+import app.mainichi.ErrorCode
+import app.mainichi.component.ResponseStatusCodeException
 import app.mainichi.request.CommentCreateRequest
 import app.mainichi.event.CommentCreatedEvent
 import app.mainichi.repository.CommentRepository
@@ -7,10 +9,8 @@ import app.mainichi.service.EventService
 import app.mainichi.service.SnowflakeService
 import app.mainichi.table.Comment
 import kotlinx.coroutines.flow.Flow
-import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.reactive.server.awaitSession
-import org.springframework.web.server.ServerWebExchange
+import java.security.Principal
 
 @RestController
 class CommentController(
@@ -18,56 +18,46 @@ class CommentController(
     val snowflakeService: SnowflakeService,
     val eventService: EventService
 ) {
-    //Gets the comments from the selected post
-    @GetMapping("/posts/{snowflake}/comments")
+    @GetMapping("/posts/{id}/comments")
     suspend fun getComments(
         @PathVariable
-        snowflake: Long
+        id: Long
     ): Flow<Comment> =
-        commentRepository.findAllByPost(snowflake)
+        commentRepository.findAllByPost(id)
 
-    //Adds a comment to the selected post
-    @PostMapping("/posts/{postSnowflake}/comments")
+    @PostMapping("/posts/{id}/comments")
     suspend fun addComment(
+        principal: Principal,
         @PathVariable
-        postSnowflake: Long,
-        exchange: ServerWebExchange,
+        id: Long,
         @RequestBody
         commentCreateRequest: CommentCreateRequest
-    ): Comment?{
-        val userSnowflake = exchange.awaitSession().attributes["id"] as String
-
-        //check if comment is empty, not set or bigger then 1024 characters
-        if (commentCreateRequest.content.length >= 1024 || commentCreateRequest.content.isEmpty()){
-            exchange.response.statusCode = HttpStatus.BAD_REQUEST
-            return null
-        }
+    ): Comment {
+        if (commentCreateRequest.content.length >= 1024 || commentCreateRequest.content.isEmpty())
+            throw ResponseStatusCodeException(ErrorCode.INVALID_COMMENT)
 
         val comment = commentRepository.save(
             Comment(
                 snowflakeService.next(),
-                postSnowflake,
-                userSnowflake.toLong(),
+                id,
+                principal.name.toLong(),
                 commentCreateRequest.content,
                 0
             )
         )
 
-        eventService.emit(CommentCreatedEvent(
-            comment
-        ))
+        eventService.emit(CommentCreatedEvent(comment))
 
         return comment
     }
 
-    //Deletes the selected comment from the selected post
-    @DeleteMapping("/posts/{postSnowflake}/{commentSnowflake}")
+    @DeleteMapping("/posts/{postId}/{commentId}")
     suspend fun deleteComment(
         @PathVariable
-        postSnowflake: Long,
+        postId: String,
         @PathVariable
-        commentSnowflake: Long
-    ){
-        commentRepository.deleteById(commentSnowflake.toString())
+        commentId: String
+    ) {
+        commentRepository.deleteById(commentId)
     }
 }

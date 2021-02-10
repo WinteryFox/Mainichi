@@ -15,14 +15,50 @@ enum class ErrorCode(
     val code: Short,
     val message: String
 ) {
-    GENERAL_ERROR(HttpStatus.BAD_REQUEST, 0, "General error (such as a malformed request body, amongst other things)."),
-
     // 400
-    INVALID_USERNAME(HttpStatus.BAD_REQUEST, 4001, "Invalid username."),
-    INVALID_BIRTHDAY(HttpStatus.BAD_REQUEST, 4002, "Invalid date format, must be ISO-8601 format."),
-    INVALID_GENDER(HttpStatus.BAD_REQUEST, 4003, "Invalid gender."),
-    INVALID_SUMMARY(HttpStatus.BAD_REQUEST, 4004, "Invalid summary."),
-    INVALID_AVATAR(HttpStatus.BAD_REQUEST, 4005, "Invalid avatar."),
-    FAILED_CAPTCHA(HttpStatus.BAD_REQUEST, 4006, "The captcha was solved incorrectly."),
-    USER_EXISTS(HttpStatus.BAD_REQUEST, 4007, "That email is already registered to another account.")
+    INVALID_USERNAME(
+        HttpStatus.BAD_REQUEST,
+        4001,
+        "Invalid username."
+    ),
+    INVALID_BIRTHDAY(
+        HttpStatus.BAD_REQUEST,
+        4002,
+        "Invalid date format, must be ISO-8601 format."
+    ),
+    INVALID_GENDER(
+        HttpStatus.BAD_REQUEST,
+        4003,
+        "Invalid gender."
+    ),
+    INVALID_SUMMARY(
+        HttpStatus.BAD_REQUEST,
+        4004,
+        "Invalid summary."
+    ),
+    INVALID_AVATAR(
+        HttpStatus.BAD_REQUEST,
+        4005,
+        "Invalid avatar."
+    ),
+    FAILED_CAPTCHA(
+        HttpStatus.BAD_REQUEST,
+        4006,
+        "The captcha was solved incorrectly."
+    ),
+    USER_EXISTS(
+        HttpStatus.BAD_REQUEST,
+        4007,
+        "That email is already registered to another account."
+    ),
+    INVALID_COMMENT(
+        HttpStatus.BAD_REQUEST,
+        4008,
+        "Comments may not be empty and may not be longer than 1024 characters."
+    ),
+    INVALID_POST(
+        HttpStatus.BAD_REQUEST,
+        4009,
+        "Posts may not be empty and may not be longer than 2048 characters."
+    ),
 }

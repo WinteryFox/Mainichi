@@ -13,7 +13,6 @@ import kotlinx.coroutines.reactive.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.*
 import org.springframework.r2dbc.core.DatabaseClient
-import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.r2dbc.core.bind
 import org.springframework.util.LinkedMultiValueMap
@@ -70,9 +69,9 @@ class AccountController(
 
         client.sql(
             """
-INSERT INTO users (id, email, username, gender, birthday, summary, avatar, password, version)
-VALUES ($1, $2, $3, $4, $5, $6, $7, crypt($8, gen_salt('md5')), $9)
-RETURNING *
+    INSERT INTO users (id, email, username, gender, birthday, summary, avatar, password, version)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, crypt($8, gen_salt('md5')), $9)
+    RETURNING *
         """
         )
             .bind(0, id)

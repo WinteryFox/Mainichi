@@ -1,19 +1,19 @@
 package app.mainichi.controller
 
+import app.mainichi.ErrorCode
 import app.mainichi.`object`.ShortPost
+import app.mainichi.component.ResponseStatusCodeException
 import app.mainichi.event.PostCreateEvent
-import app.mainichi.repository.CommentRepository
 import app.mainichi.repository.PostRepository
 import app.mainichi.table.Post
 import app.mainichi.repository.ShortPostRepository
+import app.mainichi.request.PostCreateRequest
 import app.mainichi.service.EventService
 import app.mainichi.service.SnowflakeService
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.reactive.server.awaitFormData
-import org.springframework.web.reactive.server.awaitSession
-import org.springframework.web.server.ServerWebExchange
+import org.springframework.web.server.ResponseStatusException
+import java.security.Principal
 
 /**
  * REST controller for post data
@@ -22,7 +22,6 @@ import org.springframework.web.server.ServerWebExchange
 class PostController(
     val postRepository: PostRepository,
     val shortPostRepository: ShortPostRepository,
-    val commentRepository: CommentRepository,
     val eventService: EventService,
     val snowflakeService: SnowflakeService
 ) {
@@ -38,7 +37,6 @@ class PostController(
         id: Long
     ) = shortPostRepository.findByid(id)
 
-
     /**
      * Request all post data from a specific user
      */
@@ -51,26 +49,20 @@ class PostController(
     /**
      * Creates a post and attaches it to the current logged in user
      */
-    @PostMapping(
-        "/posts",
-        consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
-    )
+    @PostMapping("/posts")
     suspend fun createPost(
-        exchange: ServerWebExchange
-    ): Post? {
-        val userid = exchange.awaitSession().attributes["id"] as String
-        val content = exchange.awaitFormData().toSingleValueMap().toMap()["content"]
-        if (content == null || content.length >= 1024 || content.isEmpty()) {
-            exchange.response.statusCode = HttpStatus.BAD_REQUEST
-            return null
-        }
+        principal: Principal,
+        @RequestBody
+        request: PostCreateRequest
+    ): Post {
+        if (request.content.length >= 1024 || request.content.isEmpty())
+            throw ResponseStatusCodeException(ErrorCode.INVALID_POST)
 
         val post = postRepository.save(
             Post(
                 snowflakeService.next(),
-                userid.toLong(),
-                content,
+                principal.name.toLong(),
+                request.content,
                 0
             )
         )
@@ -92,35 +84,27 @@ class PostController(
     /**
      * Updates selected post
      */
-    @PostMapping(
-        "/posts/{id}",
-        consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
-    )
+    @PostMapping("/posts/{id}")
     suspend fun updatePost(
-        exchange: ServerWebExchange,
+        principal: Principal,
         @PathVariable("id")
-        id: Long,
+        id: String,
+        @RequestBody
+        request: PostCreateRequest
     ): Post? {
-        val post = postRepository.findById(id.toString())
-        val form = exchange.awaitFormData().toSingleValueMap().toMap()
-        val content = form["content"]
+        val post = postRepository.findById(id) ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
 
-        if (post == null || content == null || content.length >= 1024 || content.length <= 16) {
-            exchange.response.statusCode = HttpStatus.BAD_REQUEST
-            return null
-        }
+        if (request.content.length >= 1024 || request.content.isEmpty())
+            throw ResponseStatusCodeException(ErrorCode.INVALID_POST)
 
-        if (exchange.awaitSession().attributes["id"] as String != post.author.toString()) {
-            exchange.response.statusCode = HttpStatus.FORBIDDEN
-            return null
-        }
+        if (principal.name != post.author.toString())
+            throw ResponseStatusException(HttpStatus.FORBIDDEN)
 
         return postRepository.save(
             Post(
                 post.id,
                 post.author,
-                content,
+                request.content,
                 post.version
             )
         )

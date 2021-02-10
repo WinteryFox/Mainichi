@@ -22,7 +22,6 @@ import org.springframework.http.MediaType
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.await
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.reactive.server.awaitSession
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import java.io.FileOutputStream
@@ -98,12 +97,12 @@ class UserController(
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     suspend fun updateSelf(
-        exchange: ServerWebExchange,
+        principal: Principal,
         @RequestBody
         update: UserUpdateRequest
     ): User {
         // Retrieve user and form data sent in
-        val user = userRepository.findById(exchange.awaitSession().attributes["id"] as String)!!
+        val user = userRepository.findById(principal.name)!!
 
         if (update.username.isEmpty() ||
             update.username.length > MAX_USERNAME_LENGTH
@@ -165,14 +164,11 @@ class UserController(
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     suspend fun updateAvatar(
-        exchange: ServerWebExchange,
+        principal: Principal,
         @RequestBody
         request: AvatarUploadRequest
     ): User {
-        val id = exchange.awaitSession().attributes["id"] as String?
-            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val user = userRepository.findById(id)
-            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
+        val user = userRepository.findById(principal.name)!!
 
         val dataUri = DataURISchemeUtil().parse(request.avatar)
         if (!dataUri.isBase64 || dataUri.mediaType != org.apache.tika.mime.MediaType.image("png"))
