@@ -4,6 +4,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository
+import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers
 import org.springframework.stereotype.Component
@@ -18,10 +19,16 @@ class JwtAuthenticationWebFilter(
         super.setServerAuthenticationConverter(authenticationConverter)
         super.setSecurityContextRepository(NoOpServerSecurityContextRepository.getInstance())
         super.setRequiresAuthenticationMatcher { exchange ->
-            ServerWebExchangeMatchers.pathMatchers(
-                HttpMethod.POST,
-                "/login",
-                "/register"
+            OrServerWebExchangeMatcher(
+                ServerWebExchangeMatchers.pathMatchers(
+                    HttpMethod.POST,
+                    "/login",
+                    "/register"
+                ),
+                ServerWebExchangeMatchers.pathMatchers(
+                    HttpMethod.GET,
+                    "/avatars/**"
+                )
             )
                 .matches(exchange)
                 .flatMap {
