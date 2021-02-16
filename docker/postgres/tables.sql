@@ -2,14 +2,14 @@ CREATE EXTENSION pgcrypto;
 
 CREATE TABLE users
 (
-    id       BIGINT PRIMARY KEY,           -- The ID of the user
-    email    TEXT   NOT NULL,              -- The user's email
+    id       BIGINT PRIMARY KEY,
+    email    TEXT   NOT NULL,
     password TEXT   NOT NULL,
-    username TEXT   NOT NULL,              -- The username of the user
-    gender   CHAR            DEFAULT NULL, -- The gender of the user (female, male, unknown)
-    birthday DATE            DEFAULT NULL, -- The user's birthday
-    summary  TEXT            DEFAULT NULL, -- The summary/description/self-introduction of the user
-    avatar   TEXT            DEFAULT NULL, -- The user's avatar hash
+    username TEXT   NOT NULL,
+    gender   CHAR            DEFAULT NULL,
+    birthday DATE            DEFAULT NULL,
+    summary  TEXT            DEFAULT NULL,
+    avatar   TEXT            DEFAULT NULL,
     version  BIGINT NOT NULL DEFAULT 0,
     CHECK (gender IN ('F', 'M'))
 );
@@ -31,32 +31,32 @@ CREATE TABLE proficient
 
 CREATE TABLE posts
 (
-    id      BIGINT PRIMARY KEY,           -- The ID of the post
-    author  BIGINT REFERENCES users (id), -- The author of the post
-    content TEXT   NOT NULL,              -- The content of the post
+    id      BIGINT PRIMARY KEY,
+    author  BIGINT REFERENCES users (id),
+    content TEXT   NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE likes
 (
-    post  BIGINT REFERENCES posts (id), -- The post liked
-    liker BIGINT REFERENCES users (id), -- The user who liked the post
+    post  BIGINT REFERENCES posts (id),
+    liker BIGINT REFERENCES users (id),
     PRIMARY KEY (post, liker)
 );
 
 CREATE TABLE comments
 (
-    id        BIGINT PRIMARY KEY,           -- The comment's ID
-    post      BIGINT REFERENCES posts (id), -- The post the comment is on
-    commenter BIGINT REFERENCES users (id), -- User the comment is from
-    content   TEXT   NOT NULL,              -- The content of the comment
+    id        BIGINT PRIMARY KEY,
+    post      BIGINT REFERENCES posts (id),
+    commenter BIGINT REFERENCES users (id),
+    content   TEXT   NOT NULL,
     version   BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE follows
 (
-    follower BIGINT REFERENCES users (id), -- The person following
-    followee BIGINT REFERENCES users (id)  -- The person being followed
+    follower BIGINT REFERENCES users (id),
+    followee BIGINT REFERENCES users (id)
 );
 
 CREATE TABLE sessions
