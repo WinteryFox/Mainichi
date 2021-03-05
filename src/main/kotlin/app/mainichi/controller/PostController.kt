@@ -35,7 +35,7 @@ class PostController(
     suspend fun getPost(
         @PathVariable
         id: Long
-    ) = shortPostRepository.findByid(id)
+    ) = shortPostRepository.findById(id)
 
     /**
      * Request all post data from a specific user
@@ -55,7 +55,7 @@ class PostController(
         @RequestBody
         request: PostCreateRequest
     ): Post {
-        if (request.content.length >= 1024 || request.content.isEmpty())
+        if (request.content.length >= 2048 || request.content.isEmpty())
             throw ResponseStatusCodeException(ErrorCode.INVALID_POST)
 
         val post = postRepository.save(

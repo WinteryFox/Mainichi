@@ -45,12 +45,11 @@ class UserController(
     val client: DatabaseClient,
     val storage: Storage
 ) {
-    @GetMapping("/users/{ids}")
+    @GetMapping("/users/{id}")
     suspend fun getUsers(
         @PathVariable
-        ids: Set<String>
-    ) = userRepository.findAllById(ids)
-        .map { PartialUser(it) }
+        id: String
+    ) = userRepository.findById(id)
 
     /**
      * Request own user data

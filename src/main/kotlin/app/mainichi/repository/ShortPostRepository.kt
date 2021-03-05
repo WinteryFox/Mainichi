@@ -21,6 +21,7 @@ class ShortPostRepository(
                      LEFT JOIN likes l ON p.id = l.post
                      LEFT JOIN comments c ON p.id = c.post
             GROUP BY p.id
+            LIMIT 30
         """)
             .map { row, metadata -> converter.read(ShortPost::class.java, row, metadata) }
             .all()
@@ -40,7 +41,7 @@ class ShortPostRepository(
             .map { row, metadata -> converter.read(ShortPost::class.java, row, metadata) }
             .all()
 
-    suspend fun findByid(id: Long): ShortPost? =
+    suspend fun findById(id: Long): ShortPost? =
         client.sql("""
             SELECT p.*,
                    count(DISTINCT l.*) like_count,

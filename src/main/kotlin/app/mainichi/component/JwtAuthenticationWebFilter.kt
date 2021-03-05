@@ -4,7 +4,8 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository
-import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher
+import org.springframework.security.web.server.util.matcher.AndServerWebExchangeMatcher
+import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers
 import org.springframework.stereotype.Component
@@ -19,15 +20,27 @@ class JwtAuthenticationWebFilter(
         super.setServerAuthenticationConverter(authenticationConverter)
         super.setSecurityContextRepository(NoOpServerSecurityContextRepository.getInstance())
         super.setRequiresAuthenticationMatcher { exchange ->
-            OrServerWebExchangeMatcher(
-                ServerWebExchangeMatchers.pathMatchers(
-                    HttpMethod.POST,
-                    "/login",
-                    "/register"
+            AndServerWebExchangeMatcher(
+                NegatedServerWebExchangeMatcher(
+                    ServerWebExchangeMatchers.pathMatchers(
+                        HttpMethod.GET,
+                        "/users/@me"
+                    )
                 ),
-                ServerWebExchangeMatchers.pathMatchers(
-                    HttpMethod.GET,
-                    "/avatars/**"
+                ServerWebExchangeMatchers.matchers(
+                    ServerWebExchangeMatchers.pathMatchers(
+                        HttpMethod.POST,
+                        "/login",
+                        "/register"
+                    ),
+                    ServerWebExchangeMatchers.pathMatchers(
+                        HttpMethod.GET,
+                        "/events",
+                        "/avatars/{hash}.png",
+                        "/posts",
+                        "/users/{id}",
+                        "/posts/{id}/comments"
+                    )
                 )
             )
                 .matches(exchange)

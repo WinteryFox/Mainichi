@@ -3,9 +3,9 @@ package app.mainichi.repository
 import app.mainichi.table.Like
 import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.r2dbc.convert.R2dbcConverter
 import org.springframework.http.HttpStatus
 import org.springframework.r2dbc.core.DatabaseClient
-import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.stereotype.Repository
 import org.springframework.web.server.ResponseStatusException
@@ -13,7 +13,8 @@ import org.springframework.web.server.ResponseStatusException
 @Repository
 class EditLikeRepository(
     @Autowired
-    val client: DatabaseClient
+    val client: DatabaseClient,
+    val converter: R2dbcConverter
 ) {
     suspend fun save(entity: Like): Like =
         client.sql(
@@ -26,12 +27,7 @@ class EditLikeRepository(
         )
             .bind("post", entity.post)
             .bind("liker", entity.liker)
-            .map { row, _ ->
-                Like(
-                    row["post"] as Long,
-                    row["liker"] as Long
-                )
-            }
+            .map { row, metadata -> converter.read(Like::class.java, row, metadata) }
             .awaitSingleOrNull() ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST)
 
     suspend fun delete(entity: Like) {

@@ -58,14 +58,3 @@ CREATE TABLE follows
     follower BIGINT REFERENCES users (id),
     followee BIGINT REFERENCES users (id)
 );
-
-CREATE TABLE sessions
-(
-    id               UUID PRIMARY KEY,
-    attributes       BYTEA     NOT NULL,
-    max_idle_time    BIGINT    NOT NULL,
-    creation_time    TIMESTAMP NOT NULL,
-    last_access_time TIMESTAMP NOT NULL,
-    valid            BOOLEAN   NOT NULL,
-    version          BIGINT    NOT NULL
-)

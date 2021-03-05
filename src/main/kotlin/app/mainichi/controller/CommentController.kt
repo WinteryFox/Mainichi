@@ -51,13 +51,11 @@ class CommentController(
         return comment
     }
 
-    @DeleteMapping("/posts/{postId}/{commentId}")
+    @DeleteMapping("/comments/{id}")
     suspend fun deleteComment(
         @PathVariable
-        postId: String,
-        @PathVariable
-        commentId: String
+        id: String
     ) {
-        commentRepository.deleteById(commentId)
+        commentRepository.deleteById(id)
     }
 }
