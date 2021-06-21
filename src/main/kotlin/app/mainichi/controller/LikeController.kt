@@ -1,7 +1,7 @@
 package app.mainichi.controller
 
-import app.mainichi.event.LikeCreatedEvent
-import app.mainichi.event.LikeDeletedEvent
+import app.mainichi.event.LikeCreateEvent
+import app.mainichi.event.LikeDeleteEvent
 import app.mainichi.repository.EditLikeRepository
 import app.mainichi.table.Like
 import app.mainichi.repository.LikeRepository
@@ -42,7 +42,7 @@ class LikeController(
                 principal.name.toLong()
             )
         )
-        eventService.emit(LikeCreatedEvent(like))
+        eventService.emit(LikeCreateEvent(like))
 
         return like
     }
@@ -56,7 +56,7 @@ class LikeController(
         val like = likeRepository.findByPostAndLiker(id, principal.name.toLong()) ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
 
         editLikeRepository.delete(like)
-        eventService.emit(LikeDeletedEvent(like))
+        eventService.emit(LikeDeleteEvent(like))
 
         return like
     }

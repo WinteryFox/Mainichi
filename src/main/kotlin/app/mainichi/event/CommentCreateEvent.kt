@@ -2,9 +2,9 @@ package app.mainichi.event
 
 import app.mainichi.table.Comment
 
-class CommentCreatedEvent(
+class CommentCreateEvent(
     comment: Comment
 ) : Event<Comment>(
-    Type.COMMENT_CREATED,
+    Type.COMMENT_CREATE,
     comment
 )

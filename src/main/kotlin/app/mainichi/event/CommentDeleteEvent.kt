@@ -2,9 +2,9 @@ package app.mainichi.event
 
 import app.mainichi.table.Comment
 
-class CommentDeletedEvent(
+class CommentDeleteEvent(
     comment: Comment
 ) : Event<Comment>(
-    Type.COMMENT_DELETED,
+    Type.COMMENT_DELETE,
     comment
 )

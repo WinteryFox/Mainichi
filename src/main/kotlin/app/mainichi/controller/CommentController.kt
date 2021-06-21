@@ -3,7 +3,7 @@ package app.mainichi.controller
 import app.mainichi.ErrorCode
 import app.mainichi.component.ResponseStatusCodeException
 import app.mainichi.request.CommentCreateRequest
-import app.mainichi.event.CommentCreatedEvent
+import app.mainichi.event.CommentCreateEvent
 import app.mainichi.repository.CommentRepository
 import app.mainichi.service.EventService
 import app.mainichi.service.SnowflakeService
@@ -22,8 +22,7 @@ class CommentController(
     suspend fun getComments(
         @PathVariable
         id: Long
-    ): Flow<Comment> =
-        commentRepository.findAllByPost(id)
+    ): Flow<Comment> = commentRepository.findAllByPost(id)
 
     @PostMapping("/posts/{id}/comments")
     suspend fun addComment(
@@ -46,7 +45,7 @@ class CommentController(
             )
         )
 
-        eventService.emit(CommentCreatedEvent(comment))
+        eventService.emit(CommentCreateEvent(comment))
 
         return comment
     }

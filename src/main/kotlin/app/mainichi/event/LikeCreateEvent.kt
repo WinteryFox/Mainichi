@@ -2,9 +2,9 @@ package app.mainichi.event
 
 import app.mainichi.table.Like
 
-class LikeDeletedEvent(
+class LikeCreateEvent(
     like: Like
 ) : Event<Like>(
-    Type.LIKE_DELETED,
+    Type.LIKE_CREATE,
     like
 )

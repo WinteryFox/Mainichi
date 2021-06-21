@@ -5,10 +5,10 @@ abstract class Event<T>(
     val data: T
 ) {
     enum class Type {
-        POST_CREATED,
-        LIKE_CREATED,
-        LIKE_DELETED,
-        COMMENT_CREATED,
-        COMMENT_DELETED;
+        POST_CREATE,
+        LIKE_CREATE,
+        LIKE_DELETE,
+        COMMENT_CREATE,
+        COMMENT_DELETE;
     }
 }

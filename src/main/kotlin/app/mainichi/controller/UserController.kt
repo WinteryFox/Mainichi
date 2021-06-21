@@ -5,7 +5,7 @@ import app.mainichi.request.AvatarUploadRequest
 import app.mainichi.request.UserLanguagesUpdateRequest
 import app.mainichi.request.UserUpdateRequest
 import app.mainichi.component.ResponseStatusCodeException
-import app.mainichi.data.Storage
+import app.mainichi.data.Bucket
 import app.mainichi.data.toBuffer
 import app.mainichi.repository.*
 import app.mainichi.table.*
@@ -43,7 +43,7 @@ class UserController(
     val learningRepository: LearningRepository,
     val languageRepository: LanguageRepository,
     val client: DatabaseClient,
-    val storage: Storage
+    val bucket: Bucket
 ) {
     @GetMapping("/users/{id}")
     suspend fun getUsers(
@@ -141,7 +141,7 @@ class UserController(
         hash: String
     ): Resource {
         try {
-            val blob: Blob = storage.get("avatars/$hash") ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST)
+            val blob: Blob = bucket.get("avatars/$hash") ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST)
 
             exchange.response.headers.apply {
                 this.cacheControl = CacheControl.maxAge(Duration.ofDays(365)).cachePublic().headerValue + ", immutable"
@@ -211,7 +211,7 @@ class UserController(
                     user.birthday,
                     user.gender,
                     user.summary,
-                    storage.putWithHash(
+                    bucket.putWithHash(
                         AVATARS_LOCATION,
                         file.readBytes(),
                         MediaType.IMAGE_PNG_VALUE
@@ -223,7 +223,7 @@ class UserController(
 
             // Delete the old avatar if it wasn't null and it isn't the same as the previous one
             if (user.avatar != null && updatedUser.avatar != user.avatar)
-                storage.delete("$AVATARS_LOCATION/${user.avatar}")
+                bucket.delete("$AVATARS_LOCATION/${user.avatar}")
 
             return updatedUser
         } finally {

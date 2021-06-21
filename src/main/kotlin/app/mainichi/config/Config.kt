@@ -29,7 +29,7 @@ class Config {
                 .configurationSource {
                     CorsConfiguration()
                         .apply {
-                            allowedOrigins = listOf("http://localhost:8080")
+                            allowedOriginPatterns = listOf("*")
                             allowCredentials = true
                             allowedMethods = listOf("*")
                             allowedHeaders = listOf("*")

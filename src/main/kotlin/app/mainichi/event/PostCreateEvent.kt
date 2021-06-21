@@ -4,4 +4,4 @@ import app.mainichi.`object`.ShortPost
 
 class PostCreateEvent(
     post: ShortPost
-) : Event<ShortPost>(Type.POST_CREATED, post)
+) : Event<ShortPost>(Type.POST_CREATE, post)

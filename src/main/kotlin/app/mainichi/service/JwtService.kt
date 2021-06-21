@@ -11,7 +11,6 @@ import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
-import java.time.Duration
 import java.time.Instant
 import java.util.*
 
@@ -20,13 +19,15 @@ class JwtService {
     private val key: KeyPair
 
     init {
-        val publicKeyBytes = Files.readAllBytes(Paths.get(System.getenv("JWT_PUBLIC_KEY")))
-        val privateKeyBytes = Files.readAllBytes(Paths.get(System.getenv("JWT_PRIVATE_KEY")))
         val factory = KeyFactory.getInstance("RSA")
 
         key = KeyPair(
-            factory.generatePublic(X509EncodedKeySpec(publicKeyBytes)),
-            factory.generatePrivate(PKCS8EncodedKeySpec(privateKeyBytes))
+            factory.generatePublic(
+                X509EncodedKeySpec(Files.readAllBytes(Paths.get(System.getenv("JWT_PUBLIC_KEY"))))
+            ),
+            factory.generatePrivate(
+                PKCS8EncodedKeySpec(Files.readAllBytes(Paths.get(System.getenv("JWT_PRIVATE_KEY"))))
+            )
         )
     }
 
